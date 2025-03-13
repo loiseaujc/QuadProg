@@ -1,0 +1,45 @@
+name = "QuadProg"
+version = "0.1.0"
+license = "license"
+maintainer = "jean-christophe.loiseau@ensam.eu"
+author = "Jean-Christophe Loiseau"
+copyright = "Copyright 2020 Jane Doe"
+#description = "A short project summary in plain text"
+#categories = ["fortran", "graphics"]
+keywords = ["Convex optimization", "Quadratic Program"]
+#homepage = "https://stdlib.fortran-lang.org"
+
+[install]
+library = true
+
+[fortran]
+implicit-typing = false
+implicit-external = true
+source-form = "default"
+
+[build]
+#auto-executables = true
+#auto-examples = true
+#auto-tests = true
+#module-naming = false # ???
+#link = ["blas", "lapack"]
+
+[library]
+source-dir="src"
+
+[dependencies]
+#stdlib = "*"
+
+[dev-dependencies]
+test-drive.git = "https://github.com/nekStab/test-drive.git"
+
+[[example]]
+
+  # Example applications for a project are defined here.
+  # These are run via "fpm run --example NAME" and like the
+  # test applications, are not built when this package is used as a
+  # dependency by other packages.
+
+name="demo"
+source-dir="example"
+main="demo.f90"
