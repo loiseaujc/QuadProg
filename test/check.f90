@@ -20,11 +20,7 @@ program check
 
     ! Run all the test suites.
     do i = 1, size(testsuites)
-        write (output_unit, *) "-----"
-        write (output_unit, fmt) "Testing :", testsuites(i)%name
-        write (output_unit, *) "-----", new_line('a')
         call run_testsuite(testsuites(i)%collect, error_unit, status)
-        write (output_unit, *) new_line('a')
     end do
 
     if (status > 0) then
