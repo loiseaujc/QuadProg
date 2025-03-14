@@ -16,7 +16,7 @@
 ! USA.
 !
 !
-! this routine checks whether Aind has valid entries, i.e., 
+! this routine checks whether Aind has valid entries, i.e.,
 !   1) 1<= Aind(1,i) <= n for i=1,...,q (number of constraints)
 !   2) 1<= Aind(j,i) <= n for j=2,...,Aind(1,i)+1, i=1,...,q
 !
@@ -29,11 +29,11 @@ subroutine aind(ind, m, q, n, ok)
 
    ok = 0
    do i = 1, q
-      if( ind(1,i) < 1 .or. ind(1,i) > n ) return
-      do j = 2, ind(1,i)+1
-         if( ind(j,i) < 1 .OR. ind(j,i) > n ) return
-      enddo
-   enddo
+      if (ind(1, i) < 1 .or. ind(1, i) > n) return
+      do j = 2, ind(1, i) + 1
+         if (ind(j, i) < 1 .OR. ind(j, i) > n) return
+      end do
+   end do
    ok = 1
    return
 end

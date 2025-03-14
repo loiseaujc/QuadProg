@@ -22,15 +22,14 @@ source-form = "default"
 #auto-examples = true
 #auto-tests = true
 #module-naming = false # ???
-link = ["blas", "lapack"]
 
 [library]
 source-dir="src"
 
 [dependencies]
+stdlib = "*"
 
 [dev-dependencies]
-stdlib = "*"
 test-drive.git = "https://github.com/nekStab/test-drive.git"
 
 [[example]]

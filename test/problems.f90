@@ -2,6 +2,7 @@ module TestProblems
     use iso_fortran_env, only: output_unit
     use stdlib_math, only: is_close, all_close
     use testdrive, only: new_unittest, unittest_type, error_type, check
+    use QuadProg
     implicit none
     private
 

@@ -22,28 +22,31 @@
 !                     of order  k  is not positive definite.
 !     linpack.  this version dated 08/14/78 .
 !     cleve moler, university of new mexico, argonne national lab.
-subroutine dpofa(A, lda, n, info)
-  double precision, intent(in out) :: a(lda,n)
-  integer, intent(in out)          :: lda
-  integer, intent(in)              :: n
-  integer, intent(out)             :: info
+subroutine dpofa(a, lda, n, info)
+   use quadprog_constants, only: dp
+   integer, intent(in) :: lda
+  !! Leading dimension of the matrix A (i.e. number of rows).
+   integer, intent(in) :: n
+  !! Number of columns of the matrix A.
+   real(dp), intent(inout) :: A(lda, *)
+  !! Matrix to be factorized.
+   integer, intent(out) :: info
+  !! Information flag.
 
-  double precision :: ddot, t
-  double precision :: s
-  integer :: j, k
+   ! internal variables.
+   real(dp) :: t, s
+   integer  :: j, k
 
-  do j = 1, n
-    info = j ; s = 0.0d0
-    do k = 1, j-1
-      t = A(k,j) - dot_product(A(:k-1, k), A(:k-1, j))
-      t = t/A(k,k)
-      A(k,j) = t
-      s = s + t*t
-    enddo
-    s = A(j,j) - s
-    if (s <= 0.0d0) exit
-    A(j,j) = sqrt(s)
-  enddo
-  info = 0
-  return
-eND SUBROUTINE dpofa
+   do j = 1, n
+      info = j; s = 0.0_dp
+      do k = 1, j - 1
+         t = A(k, j) - dot_product(A(:k - 1, k), A(:k - 1, j))
+         t = t/A(k, k); A(k, j) = t; s = s + t*t
+      end do
+      s = A(j, j) - s
+      if (s <= 0.0_dp) return
+      A(j, j) = sqrt(s)
+   end do
+   info = 0
+   return
+end subroutine dpofa

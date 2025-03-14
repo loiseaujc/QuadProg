@@ -32,27 +32,28 @@
 !     cleve moler, university of new mexico, argonne national lab.
 !     modified by berwin a. turlach 05/11/95
 subroutine dpori(A, lda, n)
-  double precision, intent(out) :: A(lda, *)
-  !! Matrix to be factorized.
-  integer, intent(in out)       :: lda
+   use quadprog_constants, only: dp
+   integer, intent(in) :: lda
   !! Leading dimension of A.
-  integer, intent(in)           :: n
+   real(dp), intent(out) :: A(lda, *)
+  !! Matrix A already factorized.
+   integer, intent(in) :: n
   !! Number of columns of A.
 
-  !> Internal variables.
-  double precision :: t
-  integer :: j, k
+   !> Internal variables.
+   real(dp) :: t
+   integer :: j, k
 
-  !> Compute the inverse.
-  do k = 1, n
-    A(k,k) = 1.0d0 / A(k,k) ; t = -A(k,k)
-    A(:k-1, k) = t * A(:k-1, k)
-    do j = k+1, n
-      t = A(k,j) ; A(k,j) = 0.0d0
-      A(:k, j) = A(:k, j) + t*A(:k, k)
-    enddo
-  enddo
-  return
+   !> Compute the inverse.
+   do k = 1, n
+      A(k, k) = 1.0d0/A(k, k); t = -A(k, k)
+      A(:k - 1, k) = t*A(:k - 1, k)
+      do j = k + 1, n
+         t = A(k, j); A(k, j) = 0.0d0
+         A(:k, j) = A(:k, j) + t*A(:k, k)
+      end do
+   end do
+   return
 end subroutine dpori
 
 !     dposl solves the double precision symmetric positive definite
@@ -85,27 +86,33 @@ end subroutine dpori
 !     linpack.  this version dated 08/14/78 .
 !     cleve moler, university of new mexico, argonne national lab.
 subroutine dposl(A, lda, n, b)
-  double precision, intent(in)    :: A(lda,*)
-  integer, intent(inout)          :: lda
-  integer, intent(in)             :: n
-  double precision, intent(inout) :: b(*)
+   use quadprog_constants, only: dp
+   integer, intent(in)  :: lda
+  !! Leading dimension of the matrix A (i.e. number of rows).
+   integer, intent(in)  :: n
+  !! Number of columns of the matrix A.
+   real(dp), intent(in) :: A(lda, *)
+  !! Matrix A already factorized.
+   real(dp), intent(inout) :: b(*)
+  !! On entry, right-hand side vector.
+  !! On exit, solution vector.
 
-  !> Internal variables.
-  double precision :: t
-  integer :: k, kb
+   !> Internal variables.
+   real(dp) :: t
+   integer  :: k, kb
 
-  ! Solve trans(r)*y = b
-  do k = 1, n
-    t = dot_product(A(:k-1, k), b(:k-1))
-    b(k) = (b(k) - t) / A(k,k)
-  enddo
+   ! Solve trans(r)*y = b
+   do k = 1, n
+      t = dot_product(A(:k - 1, k), b(:k - 1))
+      b(k) = (b(k) - t)/A(k, k)
+   end do
 
-  ! Solve r*x = y
-  do kb = 1, n
-    k = n + 1 - kb
-    b(k) = b(k) / A(k,k)
-    t = -b(k)
-    b(:k-1) = t*A(:k-1, k) + b(:k-1)
-  enddo
-  return
-eND SUBROUTINE dposl
+   ! Solve r*x = y
+   do kb = 1, n
+      k = n + 1 - kb
+      b(k) = b(k)/A(k, k)
+      t = -b(k)
+      b(:k - 1) = t*A(:k - 1, k) + b(:k - 1)
+   end do
+   return
+end subroutine dposl
