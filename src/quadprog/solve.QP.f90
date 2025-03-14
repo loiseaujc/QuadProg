@@ -120,27 +120,25 @@ subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat,  &
   ! store the initial dvec to calculate below the unconstrained minima of
   ! the critical value.
 
-  do  i=1,n
+  do i = 1, n 
     work(i) = dvec(i)
-  end do
-  do  i=n+1,l
+  enddo
+  do i = n+1, l
     work(i) = 0.d0
-  end do
-  do  i=1,q
-    iact(i) = 0
-    lagr(i) = 0.d0
+  enddo
+  do i = 1, q
+    iact(i) = 0 ; lagr(i) = 0.d0
   end do
 
   ! get the initial solution
-
+ 
   if( ierr == 0 )then
-    call dpofa(dmat,fddmat,n,info)
-    if( info /= 0 )then
-      ierr = 2
-      go to 999
+    call dpofa(dmat, fddmat, n, info)
+    if( info /= 0 ) then
+      ierr = 2 ; return
     end if
-    call dposl(dmat,fddmat,n,dvec)
-    call dpori(dmat,fddmat,n)
+    call dposl(dmat, fddmat, n, dvec)
+    call dpori(dmat, fddmat, n)
   else
 
     ! matrix d is already factorized, so we have to multiply d first with
@@ -251,16 +249,12 @@ subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat,  &
       nvl = i
       temp = work(iwsv+i)/work(iwnbv+i)
     end if
-    !         if (work(iwsv+i) .lt. 0.d0) then
-    !            nvl = i
-    !            goto 72
-    !         endif
   end do
-  72   if (nvl == 0) then
-    do  i=1,nact
+  if (nvl == 0) then
+    do i = 1, nact
       lagr(iact(i))=work(iwuv+i)
     end do
-    go to 999
+    return
   end if
 
   ! calculate d=j^tn^+ where n^+ is the normal vector of the violated
@@ -337,17 +331,12 @@ subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat,  &
     ! feasible. take step in dual space and drop a constant.
 
     if (t1inf) then
-
       ! no step in dual space possible either, problem is not solvable
-
-      ierr = 1
-      go to 999
+      ierr = 1 ; return
     else
-
       ! we take a partial step in dual space and drop constraint it1,
       ! that is, we drop the it1-th active constraint.
       ! then we continue at step 2(a) (marked by label 55)
-
       do  i=1,nact
         work(iwuv+i) = work(iwuv+i) - t1*work(iwrv+i)
       end do
@@ -577,6 +566,5 @@ subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat,  &
   nact = nact-1
   iter(2) = iter(2)+1
   go to 55
-  999  continue
   return
 enD SUBROUTINE qpgen2
