@@ -21,7 +21,7 @@
 !   2) 1<= Aind(j,i) <= n for j=2,...,Aind(1,i)+1, i=1,...,q
 !
 ! Aind is a m times q matrix constructed in Splus
-subroutine aind(ind, m, q, n, ok)
+pure subroutine aind(ind, m, q, n, ok)
    implicit none
    integer, intent(in) :: m, ind(m, *), q, n
    integer, intent(out) :: ok

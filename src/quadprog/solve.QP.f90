@@ -1,6 +1,83 @@
+!  Copyright (c) 1995-2010 Berwin A. Turlach <berwin.turlach@gmail.com>
+
+!  this program is free software; you can redistribute it and/or modify
+!  it under the terms of the gnu general public license as published by
+!  the free software foundation; either version 2 of the license, or
+!  (at your option) any later version.
+
+!  this program is distributed in the hope that it will be useful,
+!  but without any warranty; without even the implied warranty of
+!  merchantability or fitness for a particular purpose.  see the
+!  gnu general public license for more details.
+
+!  you should have received a copy of the gnu general public license
+!  along with this program; if not, write to the free software
+!  foundation, inc., 59 temple place - suite 330, boston, ma 02111-1307,
+!  usa.
 submodule(quadprog) quadprog_legacy
-   use quadprog_constants
+   use quadprog_constants, only: dp
 contains
+!  this routine uses the goldfarb/idnani algorithm to solve the
+!  following minimization problem:
+
+!        minimize  -d^t x + 1/2 *  x^t d x
+!        where   a1^t x  = b1
+!                a2^t x >= b2
+
+!  the matrix d is assumed to be positive definite.  especially,
+!  w.l.o.g. d is assumed to be symmetric.
+
+!  input parameter:
+!  dmat   nxn matrix, the matrix d from above (dp)
+!         *** will be destroyed on exit ***
+!         the user has two possibilities:
+!         a) give d (ierr=0), in this case we use routines from linpack
+!            to decompose d.
+!         b) to get the algorithm started we need r^-1, where d=r^tr.
+!            so if it is cheaper to calculate r^-1 in another way (d may
+!            be a band matrix) then with the general routine, the user
+!            may pass r^{-1}.  indicated by ierr not equal to zero.
+!  dvec   nx1 vector, the vector d from above (dp)
+!         *** will be destroyed on exit ***
+!         contains on exit the solution to the initial, i.e.,
+!         unconstrained problem
+!  fddmat scalar, the leading dimension of the matrix dmat
+!  n      the dimension of dmat and dvec (int)
+!  amat   nxq matrix, the matrix a from above (dp) [ a=(a1 a2)^t ]
+!         *** entries corresponding to equality constraints may have
+!             changed signes on exit ***
+!  bvec   qx1 vector, the vector of constants b in the constraints (dp)
+!         [ b = (b1^t b2^t)^t ]
+!         *** entries corresponding to equality constraints may have
+!             changed signes on exit ***
+!  fdamat the first dimension of amat as declared in the calling program.
+!         fdamat >= n !!
+!  q      integer, the number of constraints.
+!  meq    integer, the number of equality constraints, 0 <= meq <= q.
+!  ierr   integer, code for the status of the matrix d:
+!            ierr =  0, we have to decompose d
+!            ierr != 0, d is already decomposed into d=r^tr and we were
+!                       given r^{-1}.
+
+!  output parameter:
+!  sol   nx1 the final solution (x in the notation above)
+!  lagr  qx1 the final lagrange multipliers
+!  crval scalar, the value of the criterion at the minimum
+!  iact  qx1 vector, the constraints which are active in the final
+!        fit (int)
+!  nact  scalar, the number of constraints active in the final fit (int)
+!  iter  2x1 vector, first component gives the number of "main"
+!        iterations, the second one says how many constraints were
+!        deleted after they became active
+!  ierr  integer, error code on exit, if
+!           ierr = 0, no problems
+!           ierr = 1, the minimization problem has no solution
+!           ierr = 2, problems with decomposing d, in this case sol
+!                     contains garbage!!
+
+!  working space:
+!  work  vector with length at least 2*n+r*(r+5)/2 + 2*q +1
+!        where r=min(n,q)
    module procedure qpgen2
    integer :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
@@ -21,10 +98,10 @@ contains
       work(i) = dvec(i)
    end do
    do i = n + 1, l
-      work(i) = 0.d0
+      work(i) = 0.0_dp
    end do
    do i = 1, q
-      iact(i) = 0; lagr(i) = 0.d0
+      iact(i) = 0; lagr(i) = 0.0_dp
    end do
 
 ! get the initial solution
@@ -43,13 +120,13 @@ contains
       ! array dmat.
 
       do j = 1, n
-         sol(j) = 0.d0
+         sol(j) = 0.0_dp
          do i = 1, j
             sol(j) = sol(j) + dmat(i, j)*dvec(i)
          end do
       end do
       do j = 1, n
-         dvec(j) = 0.d0
+         dvec(j) = 0.0_dp
          do i = j, n
             dvec(j) = dvec(j) + dmat(j, i)*sol(i)
          end do
@@ -59,16 +136,16 @@ contains
 ! set lower triangular of dmat to zero, store dvec in sol and
 ! calculate value of the criterion at unconstrained minima
 
-   crval = 0.d0
+   crval = 0.0_dp
    do j = 1, n
       sol(j) = dvec(j)
       crval = crval + work(j)*sol(j)
-      work(j) = 0.d0
+      work(j) = 0.0_dp
       do i = j + 1, n
-         dmat(i, j) = 0.d0
+         dmat(i, j) = 0.0_dp
       end do
    end do
-   crval = -crval/2.d0
+   crval = -crval/2.0_dp
    ierr = 0
 
 ! calculate some constants, i.e., from which index on the different
@@ -84,7 +161,7 @@ contains
 ! calculate the norm of each column of the a matrix
 
    do i = 1, q
-      sum = 0.d0
+      sum = 0.0_dp
       do j = 1, n
          sum = sum + amat(j, i)*amat(j, i)
       end do
@@ -111,13 +188,13 @@ contains
          sum = sum + amat(j, i)*sol(j)
       end do
       if (abs(sum) < vsmall) then
-         sum = 0.0d0
+         sum = 0.0_dp
       end if
       if (i > meq) then
          work(l) = sum
       else
          work(l) = -abs(sum)
-         if (sum > 0.d0) then
+         if (sum > 0.0_dp) then
             do j = 1, n
                amat(j, i) = -amat(j, i)
             end do
@@ -130,7 +207,7 @@ contains
 ! explicitly to zero
 
    do i = 1, nact
-      work(iwsv + iact(i)) = 0.d0
+      work(iwsv + iact(i)) = 0.0_dp
    end do
 
 ! we weight each violation by the number of non-zero elements in the
@@ -140,7 +217,7 @@ contains
 ! take always the first constraint which is violated. ;-)
 
    nvl = 0
-   temp = 0.d0
+   temp = 0.0_dp
    do i = 1, q
       if (work(iwsv + i) < temp*work(iwnbv + i)) then
          nvl = i
@@ -160,7 +237,7 @@ contains
 
 55 continue
    do i = 1, n
-      sum = 0.d0
+      sum = 0.0_dp
       do j = 1, n
          sum = sum + dmat(j, i)*amat(j, nvl)
       end do
@@ -171,7 +248,7 @@ contains
 
    l1 = iwzv
    do i = 1, n
-      work(l1 + i) = 0.d0
+      work(l1 + i) = 0.0_dp
    end do
    do j = nact + 1, n
       do i = 1, n
@@ -194,8 +271,8 @@ contains
       sum = sum/work(l1)
       work(iwrv + i) = sum
       if (iact(i) <= meq) cycle
-      if (sum <= 0.d0) cycle
-7     t1inf = .false.
+      if (sum <= 0.0_dp) cycle
+      t1inf = .false.
       it1 = i
    end do
 
@@ -207,7 +284,7 @@ contains
       t1 = work(iwuv + it1)/work(iwrv + it1)
       do i = 1, nact
          if (iact(i) <= meq) cycle
-         if (work(iwrv + i) <= 0.d0) cycle
+         if (work(iwrv + i) <= 0.0_dp) cycle
          temp = work(iwuv + i)/work(iwrv + i)
          if (temp < t1) then
             t1 = temp
@@ -218,7 +295,7 @@ contains
 
 ! test if the z vector is equal to zero
 
-   sum = 0.d0
+   sum = 0.0_dp
    do i = iwzv + 1, iwzv + n
       sum = sum + work(i)*work(i)
    end do
@@ -246,7 +323,7 @@ contains
       ! the constraint becomes feasible.
       ! keep sum (which is z^tn^+) to update crval below!
 
-      sum = 0.d0
+      sum = 0.0_dp
       do i = 1, n
          sum = sum + work(iwzv + i)*amat(i, nvl)
       end do
@@ -264,7 +341,7 @@ contains
       do i = 1, n
          sol(i) = sol(i) + tt*work(iwzv + i)
       end do
-      crval = crval + tt*sum*(tt/2.d0 + work(iwuv + nact + 1))
+      crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
       do i = 1, nact
          work(iwuv + i) = work(iwuv + i) - tt*work(iwrv + i)
       end do
@@ -307,7 +384,7 @@ contains
                ! if it is already zero we don't have to do anything, except of
                ! decreasing l1
 
-               if (work(i) == 0.d0) cycle
+               if (work(i) == 0.0_dp) cycle
                gc = max(abs(work(i - 1)), abs(work(i)))
                gs = min(abs(work(i - 1)), abs(work(i)))
                temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(i - 1))
@@ -323,8 +400,8 @@ contains
                ! otherwise we have to apply the givens rotation to these columns.
                ! the i-1 element of d has to be updated to temp.
 
-               if (gc == 1.d0) cycle
-               if (gc == 0.d0) then
+               if (gc == 1.0_dp) cycle
+               if (gc == 0.0_dp) then
                   work(i - 1) = gs*temp
                   do j = 1, n
                      temp = dmat(j, i - 1)
@@ -333,7 +410,7 @@ contains
                   end do
                else
                   work(i - 1) = temp
-                  nu = gs/(1.d0 + gc)
+                  nu = gs/(1.0_dp + gc)
                   do j = 1, n
                      temp = gc*dmat(j, i - 1) + gs*dmat(j, i)
                      dmat(j, i) = nu*(dmat(j, i - 1) + temp) - dmat(j, i)
@@ -362,7 +439,7 @@ contains
             work(iwsv + nvl) = sum
          else
             work(iwsv + nvl) = -abs(sum)
-            if (sum > 0.d0) then
+            if (sum > 0.0_dp) then
                do j = 1, n
                   amat(j, nvl) = -amat(j, nvl)
                end do
@@ -395,7 +472,7 @@ contains
 
    l = iwrm + (it1*(it1 + 1))/2 + 1
    l1 = l + it1
-   if (work(l1) == 0.d0) go to 798
+   if (work(l1) == 0.0_dp) go to 798
    gc = max(abs(work(l1 - 1)), abs(work(l1)))
    gs = min(abs(work(l1 - 1)), abs(work(l1)))
    temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(l1 - 1))
@@ -410,8 +487,8 @@ contains
 ! r and columns in j, we can ignore the sign of gs.
 ! otherwise we have to apply the givens rotation to these rows/columns.
 
-   if (gc == 1.d0) go to 798
-   if (gc == 0.d0) then
+   if (gc == 1.0_dp) go to 798
+   if (gc == 0.0_dp) then
       do i = it1 + 1, nact
          temp = work(l1 - 1)
          work(l1 - 1) = work(l1)
@@ -424,7 +501,7 @@ contains
          dmat(i, it1 + 1) = temp
       end do
    else
-      nu = gs/(1.d0 + gc)
+      nu = gs/(1.0_dp + gc)
       do i = it1 + 1, nact
          temp = gc*work(l1 - 1) + gs*work(l1)
          work(l1) = nu*(work(l1 - 1) + temp) - work(l1)
@@ -458,11 +535,183 @@ contains
    it1 = it1 + 1
    if (it1 < nact) go to 797
 799 work(iwuv + nact) = work(iwuv + nact + 1)
-   work(iwuv + nact + 1) = 0.d0
+   work(iwuv + nact + 1) = 0.0_dp
    iact(nact) = 0
    nact = nact - 1
    iter(2) = iter(2) + 1
    go to 55
    return
    end procedure
+
+!     dpofa factors a double precision symmetric positive definite
+!     matrix.
+!     dpofa is usually called by dpoco, but it can be called
+!     directly with a saving in time if  rcond  is not needed.
+!     (time for dpoco) = (1 + 18/n)*(time for dpofa) .
+!     on entry
+!        a       double precision(lda, n)
+!                the symmetric matrix to be factored.  only the
+!                diagonal and upper triangle are used.
+!        lda     integer
+!                the leading dimension of the array  a .
+!        n       integer
+!                the order of the matrix  a .
+!     on return
+!        a       an upper triangular matrix  r  so that  a = trans(r)*r
+!                where  trans(r)  is the transpose.
+!                the strict lower triangle is unaltered.
+!                if  info .ne. 0 , the factorization is not complete.
+!        info    integer
+!                = 0  for normal return.
+!                = k  signals an error condition.  the leading minor
+!                     of order  k  is not positive definite.
+!     linpack.  this version dated 08/14/78 .
+!     cleve moler, university of new mexico, argonne national lab.
+   pure subroutine dpofa(a, lda, n, info)
+      use quadprog_constants, only: dp
+      integer, intent(in) :: lda
+  !! Leading dimension of the matrix A (i.e. number of rows).
+      integer, intent(in) :: n
+  !! Number of columns of the matrix A.
+      real(dp), intent(inout) :: A(lda, *)
+  !! Matrix to be factorized.
+      integer, intent(out) :: info
+  !! Information flag.
+
+      ! internal variables.
+      real(dp) :: t, s
+      integer  :: j, k
+
+      do j = 1, n
+         info = j; s = 0.0_dp
+         do k = 1, j - 1
+            t = A(k, j) - dot_product(A(:k - 1, k), A(:k - 1, j))
+            t = t/A(k, k); A(k, j) = t; s = s + t*t
+         end do
+         s = A(j, j) - s
+         if (s <= 0.0_dp) return
+         A(j, j) = sqrt(s)
+      end do
+      info = 0
+      return
+   end subroutine dpofa
+
+!     dpori computes the inverse of the factor of a
+!     double precision symmetric positive definite matrix
+!     using the factors computed by dpofa.
+!
+!     modification of dpodi by bat 05/11/95
+!
+!     on entry
+!
+!        a       double precision(lda, n)
+!                the output  a  from dpofa
+!
+!        lda     integer
+!                the leading dimension of the array  a .
+!
+!        n       integer
+!                the order of the matrix  a .
+!
+!     on return
+!
+!        a       if dpofa was used to factor  a  then
+!                dpodi produces the upper half of inverse(a) .
+!                elements of  a  below the diagonal are unchanged.
+!
+!     error condition
+!
+!        a division by zero will occur if the input factor contains
+!        a zero on the diagonal and the inverse is requested.
+!        it will not occur if the subroutines are called correctly
+!        and if dpoco or dpofa has set info .eq. 0 .
+!
+!     linpack.  this version dated 08/14/78 .
+!     cleve moler, university of new mexico, argonne national lab.
+!     modified by berwin a. turlach 05/11/95
+   pure subroutine dpori(A, lda, n)
+      use quadprog_constants, only: dp
+      integer, intent(in) :: lda
+  !! Leading dimension of A.
+      real(dp), intent(out) :: A(lda, *)
+  !! Matrix A already factorized.
+      integer, intent(in) :: n
+  !! Number of columns of A.
+
+      !> Internal variables.
+      real(dp) :: t
+      integer :: j, k
+
+      !> Compute the inverse.
+      do k = 1, n
+         A(k, k) = 1.0d0/A(k, k); t = -A(k, k)
+         A(:k - 1, k) = t*A(:k - 1, k)
+         do j = k + 1, n
+            t = A(k, j); A(k, j) = 0.0d0
+            A(:k, j) = A(:k, j) + t*A(:k, k)
+         end do
+      end do
+      return
+   end subroutine dpori
+
+!     dposl solves the double precision symmetric positive definite
+!     system a * x = b
+!     using the factors computed by dpoco or dpofa.
+!     on entry
+!        a       double precision(lda, n)
+!                the output from dpoco or dpofa.
+!        lda     integer
+!                the leading dimension of the array  a .
+!        n       integer
+!                the order of the matrix  a .
+!        b       double precision(n)
+!                the right hand side vector.
+!     on return
+!        b       the solution vector  x .
+!     error condition
+!        a division by zero will occur if the input factor contains
+!        a zero on the diagonal.  technically this indicates
+!        singularity but it is usually caused by improper subroutine
+!        arguments.  it will not occur if the subroutines are called
+!        correctly and  info .eq. 0 .
+!     to compute  inverse(a) * c  where  c  is a matrix
+!     with  p  columns
+!           call dpoco(a,lda,n,rcond,z,info)
+!           if (rcond is too small .or. info .ne. 0) go to ...
+!           do 10 j = 1, p
+!              call dposl(a,lda,n,c(1,j))
+!        10 continue
+!     linpack.  this version dated 08/14/78 .
+!     cleve moler, university of new mexico, argonne national lab.
+   pure subroutine dposl(A, lda, n, b)
+      use quadprog_constants, only: dp
+      integer, intent(in)  :: lda
+  !! Leading dimension of the matrix A (i.e. number of rows).
+      integer, intent(in)  :: n
+  !! Number of columns of the matrix A.
+      real(dp), intent(in) :: A(lda, *)
+  !! Matrix A already factorized.
+      real(dp), intent(inout) :: b(*)
+  !! On entry, right-hand side vector.
+  !! On exit, solution vector.
+
+      !> Internal variables.
+      real(dp) :: t
+      integer  :: k, kb
+
+      ! Solve trans(r)*y = b
+      do k = 1, n
+         t = dot_product(A(:k - 1, k), b(:k - 1))
+         b(k) = (b(k) - t)/A(k, k)
+      end do
+
+      ! Solve r*x = y
+      do kb = 1, n
+         k = n + 1 - kb
+         b(k) = b(k)/A(k, k)
+         t = -b(k)
+         b(:k - 1) = t*A(:k - 1, k) + b(:k - 1)
+      end do
+      return
+   end subroutine dposl
 end submodule
