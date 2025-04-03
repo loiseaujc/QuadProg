@@ -18,26 +18,19 @@ implicit-external = true
 source-form = "default"
 
 [build]
-#auto-executables = true
-#auto-examples = true
-#auto-tests = true
-#module-naming = false # ???
+auto-executables = true
+auto-examples = true
+auto-tests = true
+module-naming = false # ???
 
 [library]
 source-dir="src"
-
-[dependencies]
 
 [dev-dependencies]
 test-drive.git = "https://github.com/nekStab/test-drive.git"
 
 [[example]]
 
-  # Example applications for a project are defined here.
-  # These are run via "fpm run --example NAME" and like the
-  # test applications, are not built when this package is used as a
-  # dependency by other packages.
+name = "MPC"
+source-dir = "example/mpc"
 
-name="demo"
-source-dir="example"
-main="demo.f90"
