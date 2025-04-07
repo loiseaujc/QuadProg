@@ -60,19 +60,41 @@ module QuadProg
       end subroutine
    end interface
 
+   interface
+      pure module subroutine dpofa(A, lda, n, info)
+         integer, intent(in) :: lda
+         real(dp), intent(out) :: A(lda, *)
+         integer, intent(in) :: n
+         integer, intent(out) :: info
+      end subroutine
+
+      pure module subroutine dpori(A, lda, n)
+         integer, intent(in) :: lda
+         real(dp), intent(out) :: A(lda, *)
+         integer, intent(in) :: n
+      end subroutine
+   end interface
+
 contains
 
    type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
       real(dp), intent(in)           :: P(:, :), q(:)
       real(dp), optional, intent(in) :: A(:, :), b(:)
       real(dp), optional, intent(in) :: C(:, :), d(:)
+      integer :: info
 
       prob%neq = 0; prob%ncons = 0
 
       !> Sanity checks for the quadratic form.
       if (size(P, 1) /= size(P, 2)) error stop "Matrix P is not square."
       if (size(P, 1) /= size(q)) error stop "Matrix P and vector q have incompatible dimensions."
+
+      !> Quadratic cost.
       prob%P = P; prob%q = q
+
+      !> Pre-factorize the symmetric positive definite matrix.
+      call dpofa(prob%P, size(P, 1), size(P, 2), info)
+      call dpori(prob%P, size(P, 1), size(P, 2))
 
       !> Sanity checks for the equality constraints.
       if (present(A) .and. .not. present(b)) error stop "Right-hand side vector b for the equality constraints is missing."
@@ -151,17 +173,10 @@ contains
       !> Get the constraints matrix and vector.
       call get_constraints_matrix(problem, G, h)
       !> Solve the QP problem.
-      info = 0
+      info = 1 ! P is already factorized when defining the QP.
       call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
       !> Success?
       result%success = (info == 0)
-
-      deallocate (work)
-      deallocate (G)
-      deallocate (h)
-      deallocate (P)
-      deallocate (q)
-
       return
    end function
 

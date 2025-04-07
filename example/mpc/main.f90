@@ -29,6 +29,7 @@ module mpc_utilities
       !! Plant to be controlled.
       integer               :: horizon
       !! Horizon of the MPC problem.
+      type(qp_problem) :: prob
       real(dp), allocatable :: P(:, :), q(:, :), x0(:)
       !! Condensed quadratic cost function + initial condition
       real(dp), allocatable :: C(:, :), d(:)
@@ -159,6 +160,13 @@ contains
          end block
       end if
 
+      !> Initialize the resulting QP problem.
+      if (allocated(controller%C)) then
+         controller%prob = qp_problem(controller%P, controller%q(:, 1), C=controller%C, d=controller%d)
+      else
+         controller%prob = qp_problem(controller%P, controller%q(:, 1))
+      end if
+
    end function
 
    !-----------------------------------------
@@ -166,24 +174,13 @@ contains
    !-----------------------------------------
 
    function compute(self, x0) result(u)
-      class(mpc_controller), intent(in) :: self
+      class(mpc_controller), intent(inout) :: self
       real(dp), intent(in) :: x0(:)
       real(dp) :: u(size(self%plant%B, 2))
-
-      type(qp_problem) :: prob
       type(OptimizeResult) :: opt
-      real(dp), allocatable :: q(:)
-
-      q = -matmul(self%q, x0)
-      if (.not. allocated(self%C)) then
-         prob = qp_problem(self%P, q)
-      else
-         prob = qp_problem(self%P, q, C=self%C, d=self%d)
-      end if
-      opt = solve(prob)
-
+      self%prob%q = -matmul(self%q, x0)
+      opt = solve(self%prob)
       if (.not. opt%success) error stop "Quadratic solver failed to find a solution."
-
       u = opt%x(1)
       return
    end function
@@ -280,14 +277,15 @@ program mpc_examples
       integer, parameter :: nt = int(T/dt)
       real(dp) :: x(2, 0:nt), y(1, 0:nt), u(1, 0:nt)
 
-      integer, parameter :: horizon = int(2.0/dt)
+      integer, parameter :: horizon = int(2_dp/dt)
       !! Horizon for the MPC controller.
 
-      real(dp) :: Q(2, 2), R(1, 1)
+      real(dp) :: Q(2, 2), R(1, 1), cost
       !! State and input cost.
       real(dp), parameter :: u_ub(horizon) = 1_dp, u_lb(horizon) = -1_dp
       type(mpc_controller) :: controller
       !! Controller.
+      real(dp) :: start_time, end_time
 
       ! Dynamics matrix.
       A(1, 1) = 1.0_dp; A(1, 2) = dt
@@ -321,6 +319,15 @@ program mpc_examples
          ! Take measurement.
          y(:, i) = matmul(plant%C, x(:, i)) + matmul(plant%D, u(:, i))
       end do
+
+      cost = 0.0_dp
+      do i = 0, nt - 1
+         cost = cost + 0.5_dp*dot_product(x(:, i), matmul(Q, x(:, i)))
+         cost = cost + 0.5_dp*dot_product(u(:, i), matmul(R, u(:, i)))
+      end do
+      cost = cost + dot_product(x(:, nt), matmul(Q, x(:, nt)))
+
+      print *, "Total cost :", cost
 
       open (unit=1234, file="example/mpc/mpc_response.dat")
       do i = 0, nt

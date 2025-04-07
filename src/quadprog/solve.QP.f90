@@ -115,7 +115,6 @@ contains
       call dposl(dmat, fddmat, n, dvec)
       call dpori(dmat, fddmat, n)
    else
-
       ! matrix d is already factorized, so we have to multiply d first with
       ! r^-t and then with r^-1.  r^-1 is stored in the upper half of the
       ! array dmat.
@@ -576,34 +575,23 @@ contains
 !                     of order  k  is not positive definite.
 !     linpack.  this version dated 08/14/78 .
 !     cleve moler, university of new mexico, argonne national lab.
-   pure subroutine dpofa(a, lda, n, info)
-!      use quadprog_constants, only: dp
-      integer, intent(in) :: lda
-  !! Leading dimension of the matrix A (i.e. number of rows).
-      integer, intent(in) :: n
-  !! Number of columns of the matrix A.
-      real(dp), intent(inout) :: A(lda, *)
-  !! Matrix to be factorized.
-      integer, intent(out) :: info
-  !! Information flag.
+   module procedure dpofa
+   real(dp) :: t, s
+   integer  :: j, k
 
-      ! internal variables.
-      real(dp) :: t, s
-      integer  :: j, k
-
-      do j = 1, n
-         info = j; s = 0.0_dp
-         do k = 1, j - 1
-            t = A(k, j) - dot_product(A(:k - 1, k), A(:k - 1, j))
-            t = t/A(k, k); A(k, j) = t; s = s + t*t
-         end do
-         s = A(j, j) - s
-         if (s <= 0.0_dp) return
-         A(j, j) = sqrt(s)
+   do j = 1, n
+      info = j; s = 0.0_dp
+      do k = 1, j - 1
+         t = A(k, j) - dot_product(A(:k - 1, k), A(:k - 1, j))
+         t = t/A(k, k); A(k, j) = t; s = s + t*t
       end do
-      info = 0
-      return
-   end subroutine dpofa
+      s = A(j, j) - s
+      if (s <= 0.0_dp) return
+      A(j, j) = sqrt(s)
+   end do
+   info = 0
+   return
+   end procedure
 
 !     dpori computes the inverse of the factor of a
 !     double precision symmetric positive definite matrix
@@ -638,30 +626,21 @@ contains
 !     linpack.  this version dated 08/14/78 .
 !     cleve moler, university of new mexico, argonne national lab.
 !     modified by berwin a. turlach 05/11/95
-   pure subroutine dpori(A, lda, n)
-!      use quadprog_constants, only: dp
-      integer, intent(in) :: lda
-  !! Leading dimension of A.
-      real(dp), intent(out) :: A(lda, *)
-  !! Matrix A already factorized.
-      integer, intent(in) :: n
-  !! Number of columns of A.
+   module procedure dpori
+   real(dp) :: t
+   integer :: j, k
 
-      !> Internal variables.
-      real(dp) :: t
-      integer :: j, k
-
-      !> Compute the inverse.
-      do k = 1, n
-         A(k, k) = 1.0d0/A(k, k); t = -A(k, k)
-         A(:k - 1, k) = t*A(:k - 1, k)
-         do j = k + 1, n
-            t = A(k, j); A(k, j) = 0.0d0
-            A(:k, j) = A(:k, j) + t*A(:k, k)
-         end do
+   !> Compute the inverse.
+   do k = 1, n
+      A(k, k) = 1.0d0/A(k, k); t = -A(k, k)
+      A(:k - 1, k) = t*A(:k - 1, k)
+      do j = k + 1, n
+         t = A(k, j); A(k, j) = 0.0d0
+         A(:k, j) = A(:k, j) + t*A(:k, k)
       end do
-      return
-   end subroutine dpori
+   end do
+   return
+   end procedure
 
 !     dposl solves the double precision symmetric positive definite
 !     system a * x = b
