@@ -36,10 +36,10 @@ test-drive.git = "https://github.com/nekStab/test-drive.git"
 name = "mpc"
 source-dir = "example/mpc"
 
-#------------------------------------------------------
-#-----     Non-negative least-squares example     -----
-#------------------------------------------------------
-[[example]]
-
-name = "nnls"
-source-dir = "example/nnls"
+# #------------------------------------------------------
+# #-----     Non-negative least-squares example     -----
+# #------------------------------------------------------
+# [[example]]
+#
+# name = "nnls"
+# source-dir = "example/nnls"

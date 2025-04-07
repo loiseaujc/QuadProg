@@ -5,7 +5,6 @@ module TestProblems
    implicit none
    private
 
-   integer, parameter, private :: dp = selected_real_kind(15, 307)
    real(dp), parameter, private :: atol = 10.0_dp**(-precision(1.0_dp))
    real(dp), parameter, private :: rtol = sqrt(atol)
 
