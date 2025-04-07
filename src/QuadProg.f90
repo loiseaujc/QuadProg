@@ -3,6 +3,7 @@ module QuadProg
    implicit none
    private
 
+   public :: dp
    public :: solve
    public :: qpgen2
 
@@ -136,7 +137,7 @@ contains
       real(dp), allocatable :: G(:, :), h(:)
       real(dp), allocatable :: work(:)
       integer               :: n, neq, ncons, r, lwork, nact, iter(2), info
-      integer, allocatable :: iact(:)
+      integer, allocatable  :: iact(:)
 
       n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
       !> Allocate data.

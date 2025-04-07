@@ -29,8 +29,17 @@ source-dir="src"
 [dev-dependencies]
 test-drive.git = "https://github.com/nekStab/test-drive.git"
 
+#----------------------------------------------------
+#-----     Model Predictive Control example     -----
+#----------------------------------------------------
 [[example]]
-
-name = "MPC"
+name = "mpc"
 source-dir = "example/mpc"
 
+#------------------------------------------------------
+#-----     Non-negative least-squares example     -----
+#------------------------------------------------------
+[[example]]
+
+name = "nnls"
+source-dir = "example/nnls"
