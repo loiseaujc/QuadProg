@@ -319,7 +319,7 @@ program mpc_examples
          ! Integrate system.
          x(:, i) = matmul(plant%A, x(:, i - 1)) + matmul(plant%B, u(:, i - 1))
          ! Take measurement.
-         y(:, i) = matmul(plant%C, x(:, i)) + matmul(plant%D, u(:, i - 1))
+         y(:, i) = matmul(plant%C, x(:, i)) + matmul(plant%D, u(:, i))
       end do
 
       open (unit=1234, file="example/mpc/mpc_response.dat")
