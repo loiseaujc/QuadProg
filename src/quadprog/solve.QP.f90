@@ -80,51 +80,46 @@ contains
 !        where r=min(n,q)
 
    module procedure qpgen2
-   integer :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
+   integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
-   logical :: t1inf, t2min
+   logical  :: t1inf, t2min
 
-   r = min(n, q)
-   l = 2*n + (r*(r + 5))/2 + 2*q + 1
+   r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
+   vsmall = epsilon(1.0_dp)                           ! Machine precision.
 
-!     code gleaned from powell's zqpcvx routine to determine a small
-!     number  that can be assumed to be an upper bound on the relative
-!     precision of the computer arithmetic.
-   vsmall = epsilon(1.0_dp)
-
-! store the initial dvec to calculate below the unconstrained minima of
-! the critical value.
-
-   do i = 1, n
+   !> Store the initial dvec and initialize some arrays.
+   do concurrent(i=1:n)
       work(i) = dvec(i)
    end do
-   do i = n + 1, l
+   do concurrent(i=n + 1:l)
       work(i) = 0.0_dp
    end do
-   do i = 1, q
+   do concurrent(i=1:q)
       iact(i) = 0; lagr(i) = 0.0_dp
    end do
 
-! get the initial solution
+   !------------------------------------------------------------
+   !-----     SOLVE UNCONSTRAINED QP AS STARTING POINT     -----
+   !------------------------------------------------------------
 
    if (ierr == 0) then
-      call dpofa(dmat, fddmat, n, info)
+      !> Matrix has not been factorized yet.
+      call dpofa(dmat, fddmat, n, info)   ! Cholesky factorization.
       if (info /= 0) then
          ierr = 2; return
       end if
-      call dposl(dmat, fddmat, n, dvec)
-      call dpori(dmat, fddmat, n)
+      call dposl(dmat, fddmat, n, dvec)   ! Solve Ax = b with pre-computed Chol. fact.
+      call dpori(dmat, fddmat, n)         ! Compute inv(A) from pre-computed Chol. fact.
    else
-      ! matrix d is already factorized, so we have to multiply d first with
-      ! r^-t and then with r^-1.  r^-1 is stored in the upper half of the
-      ! array dmat.
-
+      !> Matrix has already been pre-factorized by calling dpofa and dpori.
+      !> Multiply by inv(R).T
       do j = 1, n
          sol(j) = 0.0_dp
          do i = 1, j
             sol(j) = sol(j) + dmat(i, j)*dvec(i)
          end do
       end do
+      !> Multiply by inv(R).
       do j = 1, n
          dvec(j) = 0.0_dp
          do i = j, n
@@ -133,24 +128,24 @@ contains
       end do
    end if
 
-! set lower triangular of dmat to zero, store dvec in sol and
-! calculate value of the criterion at unconstrained minima
-
+   !> Book-keeping:
+   !>    - set low triangular part of dmat to zero,
+   !>    - store dvec in sol,
+   !>    - calculate value of the criterion at unconstrained minima.
    crval = 0.0_dp
    do j = 1, n
       sol(j) = dvec(j)
       crval = crval + work(j)*sol(j)
       work(j) = 0.0_dp
-      do i = j + 1, n
+      do concurrent(i=j + 1:n)
          dmat(i, j) = 0.0_dp
       end do
    end do
    crval = -crval/2.0_dp
    ierr = 0
 
-! calculate some constants, i.e., from which index on the different
-! quantities are stored in the work matrix
-
+   !> Calculate some constants, i.e., from which index on the different
+   !> quantities are stored in the work matrix
    iwzv = n
    iwrv = iwzv + n
    iwuv = iwrv + r
@@ -158,8 +153,7 @@ contains
    iwsv = iwrm + (r*(r + 1))/2
    iwnbv = iwsv + q
 
-! calculate the norm of each column of the a matrix
-
+   !> Calculate the norm of each column of the constraint matrix
    do i = 1, q
       sum = 0.0_dp
       do j = 1, n
@@ -171,16 +165,17 @@ contains
    iter(1) = 0
    iter(2) = 0
 
-   loop50: Do
+   !-------------------------------------------------------------------------
+   !-----     ACTIVE SET METHOD FOR SOLVING THE CONSTRAINED PROBLEM     -----
+   !-------------------------------------------------------------------------
 
-! start a new iteration
-
+   loop50: do
+      !> Update iteration counter.
       iter(1) = iter(1) + 1
 
-! calculate all constraints and check which are still violated
-! for the equality constraints we have to check whether the normal
-! vector has to be negated (as well as bvec in that case)
-
+      !> Verify all constraints.
+      !>    - Check which are being violated.
+      !>    - For equality ones, the normal vector may have to be negated, bvec also.
       l = iwsv
       do i = 1, q
          l = l + 1
@@ -204,19 +199,15 @@ contains
          end if
       end do
 
-! as safeguard against rounding errors set already active constraints
-! explicitly to zero
-
+      !> Active constraints are set explicitly to zero.
       do i = 1, nact
          work(iwsv + iact(i)) = 0.0_dp
       end do
 
-! we weight each violation by the number of non-zero elements in the
-! corresponding row of a. then we choose the violated constraint which
-! has maximal absolute value, i.e., the minimum.
-! by obvious commenting and uncommenting we can choose the strategy to
-! take always the first constraint which is violated. ;-)
-
+      !> Select which violated constraint to consider.
+      !>    - Each violation is weighted by the number of non-zero elements in
+      !>      the corresponding row of A.
+      !>    - Selected violated constraint is the one with maximal absolute value.
       nvl = 0
       temp = 0.0_dp
       do i = 1, q
@@ -232,11 +223,11 @@ contains
          return
       end if
 
-! calculate d=j^tn^+ where n^+ is the normal vector of the violated
-! constraint. j is stored in dmat in this implementation!!
-! if we drop a constraint, we have to jump back here.
-
-      loop55: Do
+      !> Compute d = J.T @ n+
+      !>    -  n+ is the normal vector of the violated constraint.
+      !>    -  J is stored in dmat in this implementation.
+      !>    -  If a constraint is dropped, we come back here.
+      loop55: do
          block700: block
 
             do i = 1, n
@@ -247,8 +238,7 @@ contains
                work(i) = sum
             end do
 
-! now calculate z = j_2 d_2
-
+            !> Compute z = J_2 @ d_2
             l1 = iwzv
             do i = 1, n
                work(l1 + i) = 0.0_dp
@@ -259,9 +249,9 @@ contains
                end do
             end do
 
-! and r = r^{-1} d_1, check also if r has positive elements (among the
-! entries corresponding to inequalities constraints).
-
+            !> Compute r = inv(R) @ d_1
+            !>    -  Check if r has positive entries (among entries corresponding
+            !>       to inequality constraints).
             t1inf = .true.
             do i = nact, 1, -1
                sum = work(i)
@@ -279,10 +269,10 @@ contains
                it1 = i
             end do
 
-! if r has positive elements, find the partial step length t1, which is
-! the maximum step in dual space without violating dual feasibility.
-! it1    stores in which component t1, the min of u/r, occurs.
-
+            !> If r has positive elements:
+            !>    -  Find partial step length t1 (maximum step in dual space without
+            !>       violating dual feasibility).
+            !>    -  it1 stores wich component t1, the min of u/r, occurs.
             if (.not. t1inf) then
                t1 = work(iwuv + it1)/work(iwrv + it1)
                do i = 1, nact
@@ -296,24 +286,21 @@ contains
                end do
             end if
 
-! test if the z vector is equal to zero
-
+            !> Test if the z vector is equal to zero.
             sum = 0.0_dp
             do i = iwzv + 1, iwzv + n
                sum = sum + work(i)*work(i)
             end do
             if (abs(sum) <= vsmall) then
-
-               ! no step in primal space such that the new constraint becomes
-               ! feasible. take step in dual space and drop a constant.
-
+               !> Not step in primal space such that the new constraint becomes feasible.
+               !>    -  Take step in dual space and drop a constraint.
                if (t1inf) then
-                  ! no step in dual space possible either, problem is not solvable
+                  !> No step in dual possible is possible. Problem is infeasible.
                   ierr = 1; return
                else
-                  ! we take a partial step in dual space and drop constraint it1,
-                  ! that is, we drop the it1-th active constraint.
-                  ! then we continue at step 2(a) (marked by label 55)
+                  !> Take partial step in dual space.
+                  !>    -  Drop the it1-th active constraint.
+                  !>    -  Continue at step 2(a) (marked by label 55).
                   do i = 1, nact
                      work(iwuv + i) = work(iwuv + i) - t1*work(iwrv + i)
                   end do
@@ -321,11 +308,9 @@ contains
                   exit block700
                end if
             else
-
-               ! compute full step length t2, minimum step in primal space such that
-               ! the constraint becomes feasible.
-               ! keep sum (which is z^tn^+) to update crval below!
-
+               !> Minimum step in primal space such that the constraint becomes feasible.
+               !>    -  Full step length t2.
+               !>    -  Keep sum = z.T @ n+ to update crval below.
                sum = 0.0_dp
                do i = 1, n
                   sum = sum + work(iwzv + i)*amat(i, nvl)
@@ -339,8 +324,7 @@ contains
                   end if
                end if
 
-               ! take step in primal and dual space
-
+               !> Take step in primal and dual space.
                do i = 1, n
                   sol(i) = sol(i) + tt*work(iwzv + i)
                end do
@@ -350,43 +334,37 @@ contains
                end do
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
 
-               ! if it was a full step, then we check wheter further constraints are
-               ! violated otherwise we can drop the current constraint and iterate once
-               ! more
+               !> If a full step has been taken:
+               !>    -  Check whether further constraints are violated.
+               !>    -  If not, drop current constraint and iterate once more.
                if (t2min) then
-
-                  ! we took a full step. thus add constraint nvl to the list of active
-                  ! constraints and update j and r
-
+                  !> Full step was performed.
+                  !>    -  Add constraint nvl to the list of active constraints.
+                  !>    -  Update J and r.
                   nact = nact + 1
                   iact(nact) = nvl
-
-                  ! to update r we have to put the first nact-1 components of the d vector
-                  ! into column (nact) of r
-
+                  !> To update r:
+                  !>    -  Put the first nact-1 components of the d vector into column
+                  !>       nact of r.
                   l = iwrm + ((nact - 1)*nact)/2 + 1
                   do i = 1, nact - 1
                      work(l) = work(i)
                      l = l + 1
                   end do
 
-                  ! if now nact=n, then we just have to add the last element to the new
-                  ! row of r.
-                  ! otherwise we use givens transformations to turn the vector d(nact:n)
-                  ! into a multiple of the first unit vector. that multiple goes into the
-                  ! last element of the new row of r and j is accordingly updated by the
-                  ! givens transformations.
-
+                  !> If nact = n:
+                  !>    -  Add the last element to the new row or r.
+                  !> Else:
+                  !>    -  Use Given rotations to turn the vector d(nact:n) into a multiple
+                  !>       of the first unit vector.
+                  !>    -  Multiple goes into the last element of the new row of r.
+                  !>    -  J is updated accordingly to the Givens rotations.
                   if (nact == n) then
                      work(l) = work(n)
                   else
                      do i = n, nact + 1, -1
-
-                        ! we have to find the givens rotation which will reduce the element
-                        ! (l1) of d to zero.
-                        ! if it is already zero we don't have to do anything, except of
-                        ! decreasing l1
-
+                        !> Find the Givens rotation reducing the l1-th element of d to zero.
+                        !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
                         gc = max(abs(work(i - 1)), abs(work(i)))
                         gs = min(abs(work(i - 1)), abs(work(i)))
@@ -394,15 +372,14 @@ contains
                         gc = work(i - 1)/temp
                         gs = work(i)/temp
 
-                        ! the givens rotation is done with the matrix (gc gs, gs -gc).
-                        ! if gc is one, then element (i) of d is zero compared with element
-                        ! (l1-1). hence we don't have to do anything.
-                        ! if gc is zero, then we just have to switch column (i) and column (i-1)
-                        ! of j. since we only switch columns in j, we have to be careful how we
-                        ! update d depending on the sign of gs.
-                        ! otherwise we have to apply the givens rotation to these columns.
-                        ! the i-1 element of d has to be updated to temp.
-
+                        !> Givens rotation is done with the matrix [gc gs, gs -gc].
+                        !>    -  If gc = 1, i-th element of d is zero compared with element
+                        !>       (l1-1). Hence, do nothing.
+                        !>    -  If gc = 0, switch column i and column i-1 of J. Since we only
+                        !>       switch columns in J, need to be careful how d is updated
+                        !>       depending on the sign of gs.
+                        !>    -  Else, Givens rotation is applied to the columns. The i-1
+                        !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
                         if (gc == 0.0_dp) then
                            work(i - 1) = gs*temp
@@ -422,18 +399,16 @@ contains
                         end if
                      end do
 
-                     ! l is still pointing to element (nact,nact) of the matrix r.
-                     ! so store d(nact) in r(nact,nact)
+                     !> l is still pointing to element (nact,nact) of the matrix r.
+                     !> Store d(nact) in r(nact,nact)
                      work(l) = work(nact)
                   end if
                else
-
-                  ! we took a partial step in dual space. thus drop constraint it1,
-                  ! that is, we drop the it1-th active constraint.
-                  ! then we continue at step 2(a) (marked by label 55)
-                  ! but since the fit changed, we have to recalculate now "how much"
-                  ! the fit violates the chosen constraint now.
-
+                  !> A partial step in dual space was taken.
+                  !>    -  Drop the it1-th active constraint.
+                  !>    -  Continue to step 2(a) (marked by label 55).
+                  !> Since fit changed, we need to recalculate by "how much" the chosen
+                  !> constraint is now violated.
                   sum = -bvec(nvl)
                   do j = 1, n
                      sum = sum + sol(j)*amat(j, nvl)
@@ -453,25 +428,23 @@ contains
                end if
             end if
             cycle loop50
-
-! drop constraint it1
+            !> Drop the it1-th constraint.
          end block block700
 
-! if it1 = nact it is only necessary to update the vector u and nact
-
-         if (it1 /= nact) Then ! go to 799
-
-! after updating one row of r (column of j) we will also come back here
-
+         !> if it1 = nact
+         !>    -  it is only necessary to update the vector u and nact
+         if (it1 /= nact) then ! go to 799
+            !> After updating one row of r (column of j), come back here.
             loop797: do
-
-! we have to find the givens rotation which will reduce the element
-! (it1+1,it1+1) of r to zero.
-! if it is already zero we don't have to do anything except of updating
-! u, iact, and shifting column (it1+1) of r to column (it1)
-! l  will point to element (1,it1+1) of r
-! l1 will point to element (it1+1,it1+1) of r
-
+               !> Find the Givens rotation reducing the (it1+1, it+1)-th element of R
+               !> to zero.
+               !> If it is already zero:
+               !>    - do nothing except updating u, iact and shifting column (it+1) of R
+               !>      to column (it1).
+               !> l will point ot element (1,it1+1) of R.
+               !> l1 will point to element (it+1, it1+1) of R.
+               ! we have to find the givens rotation which will reduce the element
+               ! (it1+1,it1+1) of r to zero.
                l = iwrm + (it1*(it1 + 1))/2 + 1
                l1 = l + it1
                if (work(l1) /= 0.0_dp) then ! first go to 798
@@ -481,14 +454,13 @@ contains
                   gc = work(l1 - 1)/temp
                   gs = work(l1)/temp
 
-! the givens rotatin is done with the matrix (gc gs, gs -gc).
-! if gc is one, then element (it1+1,it1+1) of r is zero compared with
-! element (it1,it1+1). hence we don't have to do anything.
-! if gc is zero, then we just have to switch row (it1) and row (it1+1)
-! of r and column (it1) and column (it1+1) of j. since we swithc rows in
-! r and columns in j, we can ignore the sign of gs.
-! otherwise we have to apply the givens rotation to these rows/columns.
-
+                  !> Givens rotation is done with the matrix [gc gc ; gs -gc].
+                  !> If gc = 0:
+                  !>    - Switch row (it1) and (it1+1) of R
+                  !>    - Switch column (it1= and (it+1) of J.
+                  !>    - Since we switch rows in R and columns R, we can ignore sign(gs).
+                  !> Else:
+                  !>    - Apply Givens rotation to these rows/columns.
                   if (gc /= 1.0_dp) then ! second go to 798
                      if (gc == 0.0_dp) then
                         do i = it1 + 1, nact
@@ -516,12 +488,11 @@ contains
                            dmat(i, it1) = temp
                         end do
                      end if
-
-! shift column (it1+1) of r to column (it1) (that is, the first it1
-! elements). the posit1on of element (1,it1+1) of r was calculated above
-! and stored in l.
-                  end if ! replaces second go to 798
-               end if ! replaces first go to 798
+                     ! shift column (it1+1) of r to column (it1) (that is, the first it1
+                     ! elements). the posit1on of element (1,it1+1) of r was calculated above
+                     ! and stored in l.
+                  end if
+               end if
 
                l1 = l - it1
                do i = 1, it1
@@ -530,23 +501,21 @@ contains
                   l1 = l1 + 1
                end do
 
-! update vector u and iact as necessary
-! continue with updating the matrices j and r
-
+               !> Update vector u and iact as necessary and continue
+               !> with updating the matrices J and R.
                work(iwuv + it1) = work(iwuv + it1 + 1)
                iact(it1) = iact(it1 + 1)
                it1 = it1 + 1
                if (it1 >= nact) exit loop797
             end do loop797
          end if ! go to 799
+
          work(iwuv + nact) = work(iwuv + nact + 1)
          work(iwuv + nact + 1) = 0.0_dp
          iact(nact) = 0
          nact = nact - 1
          iter(2) = iter(2) + 1
-
       end do loop55
-
    end do loop50
 
    return
@@ -630,16 +599,9 @@ contains
 
    r = min(n, q)
    l = 2*n + (r*(r + 5))/2 + 2*q + 1
-
-!     code gleaned from powell's zqpcvx routine to determine a small
-!     number  that can be assumed to be an upper bound on the relative
-!     precision of the computer arithmetic.
-
    vsmall = epsilon(1.0_dp)
 
-! store the initial dvec to calculate below the unconstrained minima of
-! the critical value.
-
+   !> Store the initial dvec and initialize some arrays.
    do i = 1, n
       work(i) = dvec(i)
    end do
@@ -651,26 +613,28 @@ contains
       lagr(i) = 0.d0
    end do
 
-! get the initial solution
+   !------------------------------------------------------------
+   !-----     SOLVE UNCONSTRAINED QP AS STARTING POINT     -----
+   !------------------------------------------------------------
 
    if (ierr == 0) then
-      call dpofa(dmat, fddmat, n, info)
+      !> Matrix has not been factorized yet.
+      call dpofa(dmat, fddmat, n, info)   ! Cholesky factorization.
       if (info /= 0) then
          ierr = 2; return
       end if
-      call dposl(dmat, fddmat, n, dvec)
-      call dpori(dmat, fddmat, n)
+      call dposl(dmat, fddmat, n, dvec)   ! Solve Ax = b with pre-computed Chol. fact.
+      call dpori(dmat, fddmat, n)         ! Compute inv(A) from pre-computed Chol. fact.
    else
-      ! matrix d is already factorized, so we have to multiply d first with
-      ! r^-t and then with r^-1.  r^-1 is stored in the upper half of the
-      ! array dmat.
-
+      !> Matrix has already been pre-factorized by calling dpofa and dpori.
+      !> Multiply by inv(R).T.
       do j = 1, n
          sol(j) = 0.d0
          do i = 1, j
             sol(j) = sol(j) + dmat(i, j)*dvec(i)
          end do
       end do
+      !> Multiply by inv(R).
       do j = 1, n
          dvec(j) = 0.d0
          do i = j, n
@@ -679,9 +643,10 @@ contains
       end do
    end if
 
-! set lower triangular of dmat to zero, store dvec in sol and
-! calculate value of the criterion at unconstrained minima
-
+   !> Book-keeping:
+   !>    - set lower triangular part of dmat to zero,
+   !>    - store dvec in sol,
+   !>    - calculate value of the criterion at unconstrained minima
    crval = 0.d0
    do j = 1, n
       sol(j) = dvec(j)
@@ -694,9 +659,8 @@ contains
    crval = -crval/2.d0
    ierr = 0
 
-! calculate some constants, i.e., from which index on the different
-! quantities are stored in the work matrix
-
+   !> Calculate some constants, i.e., from which index on the different
+   !> quantities are stored in the work matrix
    iwzv = n
    iwrv = iwzv + n
    iwuv = iwrv + r
@@ -704,8 +668,7 @@ contains
    iwsv = iwrm + (r*(r + 1))/2
    iwnbv = iwsv + q
 
-! calculate the norm of each column of the a matrix
-
+   !> Calculate the norm of each column of the constraint matrix
    do i = 1, q
       sum = 0.d0
       do j = 1, iamat(1, i)
@@ -770,16 +733,12 @@ contains
          nvl = i
          temp = work(iwsv + i)/work(iwnbv + i)
       end if
-!         if (work(iwsv+i) .lt. 0.d0) then
-!            nvl = i
-!            goto 72
-!         endif
    end do
-72 if (nvl == 0) then
+   if (nvl == 0) then
       do i = 1, nact
          lagr(iact(i)) = work(iwuv + i)
       end do
-      go to 999
+      return
    end if
 
 ! calculate d=j^tn^+ where n^+ is the normal vector of the violated
@@ -823,7 +782,7 @@ contains
       work(iwrv + i) = sum
       if (iact(i) <= meq) cycle
       if (sum <= 0.d0) cycle
-7     t1inf = .false.
+      t1inf = .false.
       it1 = i
    end do
 
@@ -856,11 +815,8 @@ contains
 ! feasible. take step in dual space and drop a constant.
 
       if (t1inf) then
-
-! no step in dual space possible either, problem is not solvable
-
-         ierr = 1
-         go to 999
+         ! no step in dual space possible either, problem is not solvable
+         ierr = 1; return
       else
 
 ! we take a partial step in dual space and drop constraint it1,
