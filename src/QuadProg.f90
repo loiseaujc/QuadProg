@@ -33,30 +33,57 @@ module QuadProg
    end interface
 
    interface
+      pure module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, fdamat, q, &
+                                    meq, iact, nact, iter, work, ierr)
+         integer, intent(in)     :: fddmat, n
+         !! Dimensions of the symmetric positive definit matrix Dmat.
+         integer, intent(in)     :: fdamat, q
+         !! Dimensions of the constraints matrix Amat.
+         integer, intent(in)     :: meq
+         !! Number of equality constraints.
+         integer, intent(out)    :: iact(*), nact
+         !! Indices and number of active constraints at the optimum.
+         integer, intent(out)    :: iter(*)
+         !! Number of iterations.
+         integer, intent(inout)  :: ierr
+         !! Information flag.
+         real(dp), intent(inout) :: dmat(fddmat, *), dvec(*)
+         !! Sym. pos. def. matrix and vector defining the quadratic cost.
+         real(dp), intent(out)   :: lagr(*), sol(*)
+         !! Lagrange multipliers and solution vector.
+         integer, intent(in)     :: iamat(fdamat + 1, *)
+         real(dp), intent(inout) :: amat(fdamat, *), bvec(*)
+         !! Matrix and vector defining the (in-)equality constraints.
+         real(dp), intent(inout) :: work(*)
+         !! Workspace.
+         real(dp), intent(out)   :: crval
+         !! Cost function at the optimum.
+      end subroutine
+
       pure module subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat, bvec, fdamat, q, &
                                     meq, iact, nact, iter, work, ierr)
          integer, intent(in)     :: fddmat, n
-      !! Dimensions of the symmetric positive definite matrix Dmat.
+         !! Dimensions of the symmetric positive definite matrix Dmat.
          integer, intent(in)     :: fdamat, q
-      !! Dimensions of the constraint matrix Amat
+         !! Dimensions of the constraint matrix Amat
          integer, intent(in)     :: meq
-      !! Number of equality constraints.
+         !! Number of equality constraints.
          integer, intent(out)    :: iact(*), nact
-      !! Indices and number of active constraints at the optimum.
+         !! Indices and number of active constraints at the optimum.
          integer, intent(out)    :: iter(*)
-      !! Number of iterations.
+         !! Number of iterations.
          integer, intent(inout)  :: ierr
-      !! Information flag.
+         !! Information flag.
          real(dp), intent(inout) :: dmat(fddmat, *), dvec(*)
-      !! Sym. pos. def. matrix and vector defining the quadratic cost.
+         !! Sym. pos. def. matrix and vector defining the quadratic cost.
          real(dp), intent(out)   :: lagr(*), sol(*)
-      !! Lagrange multipliers and solution vector.
+         !! Lagrange multipliers and solution vector.
          real(dp), intent(inout) :: amat(fdamat, *), bvec(*)
-      !! Matrix and vector defining the (in-)equality constraints.
+         !! Matrix and vector defining the (in-)equality constraints.
          real(dp), intent(inout) :: work(*)
-      !! Workspace.
+         !! Workspace.
          real(dp), intent(out)   :: crval
-      !! Cost function at the optimum.
+         !! Cost function at the optimum.
       end subroutine
    end interface
 
