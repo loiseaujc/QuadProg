@@ -13,7 +13,7 @@ Modern Fortran Edition of the `quadprog` solver
 
 ### Description
 
-This is an updated version of the `quadprog` solver initially written by A. Turlach in Fortran 77. It can be used to solve strictly convex quadratic programs of the form
+This is an updated version of the `quadprog` solver initially written by Berwin A. Turlach in Fortran 77. It can be used to solve strictly convex quadratic programs of the form
 
 $$
 \begin{aligned}
@@ -26,7 +26,7 @@ $$
 using an [active set method](https://en.wikipedia.org/wiki/Active-set_method). It is most efficient for small to moderate sized QP described using dense matrices.
 
 **Updates to the original code include:**
- - Sources have been translated for F77 fixed-form to f90 free-form.
+ - Sources have been translated from F77 fixed-form to f90 free-form.
  - All obsolescent features (`goto`, etc) have been removed. It is now 100% standard compliant (Fortran 2018).
  - It makes use of derived-type and easy to use interfaces. The `qp_problem` class is used to defined the quadratic program and `solve` to compute its solution.
  - Calls to `blas` functions and subroutines now replace some hand-crafted implementations for improved performances.
@@ -77,6 +77,8 @@ program example
     integer, parameter :: n = 3
     ! Quadratic cost.
     real(dp) :: P(n, n), q(n)
+    ! Inequality constraints.
+    real(dp) :: C(n, n), d(n)
     ! Convenience types.
     type(qp_problem) :: prob
     type(OptimizeResult) :: solution
@@ -104,7 +106,6 @@ program example
         print *, "y   =", solution%y ! Lagrange multipliers.
         print *, "obj =", solution%obj ! Objective function.
     endif
-
 end program
 ```
 
