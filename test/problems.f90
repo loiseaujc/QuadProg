@@ -19,8 +19,8 @@ contains
    subroutine collect_test_problems(testsuite)
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
       testsuite = [ &
-                  ! new_unittest("Unconstrained QP problem", test_problem_1), &
-                  ! new_unittest("Inequality Constrained QP problem", test_problem_2), &
+                  new_unittest("Unconstrained QP problem", test_problem_1), &
+                  new_unittest("Inequality Constrained QP problem", test_problem_2), &
                   new_unittest("Equality Constrained QP problem", test_problem_3) &
                   ]
    end subroutine

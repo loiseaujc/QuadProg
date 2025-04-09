@@ -201,8 +201,7 @@ contains
       loop55: do
          block700: block
 
-            call dcopy(n, amat(1:n, nvl), 1, work(1:n), 1)
-            call dtrmv("u", "t", "n", n, dmat, n, work(1:n), 1)
+            call dgemv("t", n, n, 1.0_dp, dmat(1:n, 1:n), n, amat(1:n, nvl), 1, 0.0_dp, work(1:n), 1)
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
@@ -276,7 +275,7 @@ contains
                end if
 
                !> Take step in primal and dual space.
-               call daxpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol, 1)
+               call daxpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
                crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
                call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
@@ -459,7 +458,6 @@ contains
          iter(2) = iter(2) + 1
       end do loop55
    end do loop50
-
    return
    end procedure
 
@@ -1080,7 +1078,7 @@ contains
    !> Compute the inverse.
    do k = 1, n
       A(k, k) = 1.0d0/A(k, k); t = -A(k, k)
-      A(:k - 1, k) = t*A(:k - 1, k)
+      call dscal(k - 1, t, A(:k - 1, k), 1)
       do j = k + 1, n
          t = A(k, j); A(k, j) = 0.0d0
          A(:k, j) = A(:k, j) + t*A(:k, k)
