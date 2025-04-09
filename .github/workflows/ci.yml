@@ -45,5 +45,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install BLAS and LAPACK
+        if: contains( matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get install blas lapack
+
       - run: |
           fpm test --flag "${{ join(matrix.toolchain.flags, ' ') }}"
