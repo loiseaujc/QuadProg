@@ -83,20 +83,14 @@ contains
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
    logical  :: t1inf, t2min
+   real(dp) :: dnrm2, ddot
 
    r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
    vsmall = epsilon(1.0_dp)                           ! Machine precision.
 
    !> Store the initial dvec and initialize some arrays.
-   do concurrent(i=1:n)
-      work(i) = dvec(i)
-   end do
-   do concurrent(i=n + 1:l)
-      work(i) = 0.0_dp
-   end do
-   do concurrent(i=1:q)
-      iact(i) = 0; lagr(i) = 0.0_dp
-   end do
+   call dcopy(n, dvec(1:n), 1, work(1:n), 1)
+   work(n + 1:l) = 0.0_dp; iact(1:q) = 0; lagr(1:q) = 0.0_dp
 
    !------------------------------------------------------------
    !-----     SOLVE UNCONSTRAINED QP AS STARTING POINT     -----
@@ -113,19 +107,9 @@ contains
    else
       !> Matrix has already been pre-factorized by calling dpofa and dpori.
       !> Multiply by inv(R).T
-      do j = 1, n
-         sol(j) = 0.0_dp
-         do i = 1, j
-            sol(j) = sol(j) + dmat(i, j)*dvec(i)
-         end do
-      end do
+      call dtrmv("u", "t", "n", n, dmat, n, dvec, 1)
       !> Multiply by inv(R).
-      do j = 1, n
-         dvec(j) = 0.0_dp
-         do i = j, n
-            dvec(j) = dvec(j) + dmat(j, i)*sol(i)
-         end do
-      end do
+      call dtrmv("u", "n", "n", n, dmat, n, dvec, 1)
    end if
 
    !> Book-keeping:
@@ -155,15 +139,9 @@ contains
 
    !> Calculate the norm of each column of the constraint matrix
    do i = 1, q
-      sum = 0.0_dp
-      do j = 1, n
-         sum = sum + amat(j, i)*amat(j, i)
-      end do
-      work(iwnbv + i) = sqrt(sum)
+      work(iwnbv + i) = dnrm2(n, amat(1:n, i), 1)
    end do
-   nact = 0
-   iter(1) = 0
-   iter(2) = 0
+   nact = 0; iter(1) = 0; iter(2) = 0
 
    !-------------------------------------------------------------------------
    !-----     ACTIVE SET METHOD FOR SOLVING THE CONSTRAINED PROBLEM     -----
@@ -179,21 +157,14 @@ contains
       l = iwsv
       do i = 1, q
          l = l + 1
-         sum = -bvec(i)
-         do j = 1, n
-            sum = sum + amat(j, i)*sol(j)
-         end do
-         if (abs(sum) < vsmall) then
-            sum = 0.0_dp
-         end if
+         sum = -bvec(i) + ddot(n, amat(1:n, i), 1, sol(1:n), 1)
+         if (abs(sum) < vsmall) sum = 0.0_dp
          if (i > meq) then
             work(l) = sum
          else
             work(l) = -abs(sum)
             if (sum > 0.0_dp) then
-               do j = 1, n
-                  amat(j, i) = -amat(j, i)
-               end do
+               call dscal(n, -1.0_dp, amat(1:n, i), 1)
                bvec(i) = -bvec(i)
             end if
          end if
@@ -230,24 +201,12 @@ contains
       loop55: do
          block700: block
 
-            do i = 1, n
-               sum = 0.0_dp
-               do j = 1, n
-                  sum = sum + dmat(j, i)*amat(j, nvl)
-               end do
-               work(i) = sum
-            end do
+            call dcopy(n, amat(1:n, nvl), 1, work(1:n), 1)
+            call dtrmv("u", "t", "n", n, dmat, n, work(1:n), 1)
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
-            do i = 1, n
-               work(l1 + i) = 0.0_dp
-            end do
-            do j = nact + 1, n
-               do i = 1, n
-                  work(l1 + i) = work(l1 + i) + dmat(i, j)*work(j)
-               end do
-            end do
+            call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
@@ -287,11 +246,8 @@ contains
             end if
 
             !> Test if the z vector is equal to zero.
-            sum = 0.0_dp
-            do i = iwzv + 1, iwzv + n
-               sum = sum + work(i)*work(i)
-            end do
-            if (abs(sum) <= vsmall) then
+            sum = dnrm2(n, work(iwzv + 1:iwzv + n), 1)
+            if (sum <= vsmall) then
                !> Not step in primal space such that the new constraint becomes feasible.
                !>    -  Take step in dual space and drop a constraint.
                if (t1inf) then
@@ -301,9 +257,7 @@ contains
                   !> Take partial step in dual space.
                   !>    -  Drop the it1-th active constraint.
                   !>    -  Continue at step 2(a) (marked by label 55).
-                  do i = 1, nact
-                     work(iwuv + i) = work(iwuv + i) - t1*work(iwrv + i)
-                  end do
+                  call daxpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
                   work(iwuv + nact + 1) = work(iwuv + nact + 1) + t1
                   exit block700
                end if
@@ -311,10 +265,7 @@ contains
                !> Minimum step in primal space such that the constraint becomes feasible.
                !>    -  Full step length t2.
                !>    -  Keep sum = z.T @ n+ to update crval below.
-               sum = 0.0_dp
-               do i = 1, n
-                  sum = sum + work(iwzv + i)*amat(i, nvl)
-               end do
+               sum = ddot(n, work(iwzv + 1:iwzv + n), 1, amat(1:n, nvl), 1)
                tt = -work(iwsv + nvl)/sum
                t2min = .true.
                if (.not. t1inf) then
@@ -325,13 +276,9 @@ contains
                end if
 
                !> Take step in primal and dual space.
-               do i = 1, n
-                  sol(i) = sol(i) + tt*work(iwzv + i)
-               end do
+               call daxpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol, 1)
                crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
-               do i = 1, nact
-                  work(iwuv + i) = work(iwuv + i) - tt*work(iwrv + i)
-               end do
+               call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
 
                !> If a full step has been taken:
@@ -409,18 +356,13 @@ contains
                   !>    -  Continue to step 2(a) (marked by label 55).
                   !> Since fit changed, we need to recalculate by "how much" the chosen
                   !> constraint is now violated.
-                  sum = -bvec(nvl)
-                  do j = 1, n
-                     sum = sum + sol(j)*amat(j, nvl)
-                  end do
+                  sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
                   if (nvl > meq) then
                      work(iwsv + nvl) = sum
                   else
                      work(iwsv + nvl) = -abs(sum)
                      if (sum > 0.0_dp) then
-                        do j = 1, n
-                           amat(j, nvl) = -amat(j, nvl)
-                        end do
+                        call dscal(n, -1.0_dp, amat(1:n, nvl), 1)
                         bvec(nvl) = -bvec(nvl)
                      end if
                   end if
@@ -1081,13 +1023,13 @@ contains
 !     linpack.  this version dated 08/14/78 .
 !     cleve moler, university of new mexico, argonne national lab.
    module procedure dpofa
-   real(dp) :: t, s
+   real(dp) :: t, s, ddot
    integer  :: j, k
 
    do j = 1, n
       info = j; s = 0.0_dp
       do k = 1, j - 1
-         t = A(k, j) - dot_product(A(:k - 1, k), A(:k - 1, j))
+         t = A(k, j) - ddot(k - 1, A(:k - 1, k), 1, A(:k - 1, j), 1)
          t = t/A(k, k); A(k, j) = t; s = s + t*t
       end do
       s = A(j, j) - s

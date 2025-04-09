@@ -33,8 +33,8 @@ module QuadProg
    end interface
 
    interface
-      pure module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, fdamat, q, &
-                                    meq, iact, nact, iter, work, ierr)
+      module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, fdamat, q, &
+                               meq, iact, nact, iter, work, ierr)
          integer, intent(in)     :: fddmat, n
          !! Dimensions of the symmetric positive definit matrix Dmat.
          integer, intent(in)     :: fdamat, q
@@ -60,8 +60,8 @@ module QuadProg
          !! Cost function at the optimum.
       end subroutine
 
-      pure module subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat, bvec, fdamat, q, &
-                                    meq, iact, nact, iter, work, ierr)
+      module subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat, bvec, fdamat, q, &
+                               meq, iact, nact, iter, work, ierr)
          integer, intent(in)     :: fddmat, n
          !! Dimensions of the symmetric positive definite matrix Dmat.
          integer, intent(in)     :: fdamat, q
@@ -88,14 +88,14 @@ module QuadProg
    end interface
 
    interface
-      pure module subroutine dpofa(A, lda, n, info)
+      module subroutine dpofa(A, lda, n, info)
          integer, intent(in) :: lda
          real(dp), intent(out) :: A(lda, *)
          integer, intent(in) :: n
          integer, intent(out) :: info
       end subroutine
 
-      pure module subroutine dpori(A, lda, n)
+      module subroutine dpori(A, lda, n)
          integer, intent(in) :: lda
          real(dp), intent(out) :: A(lda, *)
          integer, intent(in) :: n
