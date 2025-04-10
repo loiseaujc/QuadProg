@@ -10,7 +10,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            toolchain: {compiler: gcc, version: 14, flags: ['-cpp -O3 -march=native -mtune=native']}
+            toolchain: {compiler: gcc, version: 14, flags: ['-coverage']}
          # - os: windows-latest
             # toolchain: {compiler: gcc, version: 13, flags: ['-cpp -O3 -march=native -mtune=native']}
           - os: macos-13
@@ -50,7 +50,7 @@ jobs:
 
       - name: Run tests
         run: |
-          fpm test --flag "${{ join(matrix.toolchain.flags, ' ') }}"
+          fpm test --profile debug --flag "${{ join(matrix.toolchain.flags, ' ') }}"
 
       - name: Create coverage report
         run: |
