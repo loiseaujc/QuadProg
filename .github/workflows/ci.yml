@@ -65,6 +65,7 @@ jobs:
 
       - name: Upload coverage report
         if: contains( matrix.os, 'ubuntu')
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: build/coverage/coverage.info
