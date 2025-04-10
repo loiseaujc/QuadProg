@@ -57,7 +57,7 @@ contains
       !> Get the constraints matrix and vector.
       allocate (G(1, 1), h(1)); G = 0.0_dp; h = 0.0_dp
       !> Solve the QP problem.
-      info = 1 ! P is already factorized when defining the QP.
+      info = 0 ! P is already factorized when defining the QP.
       call qpgen2(P, q, n, n, x, y, obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
 
       !> Check QuadProg info message.
