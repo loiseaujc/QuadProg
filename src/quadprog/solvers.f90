@@ -533,9 +533,9 @@ contains
 !        where r=min(n,q)
 
    module procedure qpgen1
-   integer :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
+   integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
-   logical :: t1inf, t2min
+   logical  :: t1inf, t2min
 
    r = min(n, q)
    l = 2*n + (r*(r + 5))/2 + 2*q + 1
@@ -546,11 +546,11 @@ contains
       work(i) = dvec(i)
    end do
    do i = n + 1, l
-      work(i) = 0.d0
+      work(i) = 0.0_dp
    end do
    do i = 1, q
       iact(i) = 0
-      lagr(i) = 0.d0
+      lagr(i) = 0.0_dp
    end do
 
    !------------------------------------------------------------
@@ -576,13 +576,13 @@ contains
    !>    - set lower triangular part of dmat to zero,
    !>    - store dvec in sol,
    !>    - calculate value of the criterion at unconstrained minima
-   crval = 0.d0
+   crval = 0.0_dp
    do j = 1, n
       sol(j) = dvec(j)
       crval = crval + work(j)*sol(j)
-      work(j) = 0.d0
+      work(j) = 0.0_dp
       do i = j + 1, n
-         dmat(i, j) = 0.d0
+         dmat(i, j) = 0.0_dp
       end do
    end do
    crval = -crval/2.d0
@@ -599,7 +599,7 @@ contains
 
    !> Calculate the norm of each column of the constraint matrix
    do i = 1, q
-      sum = 0.d0
+      sum = 0.0_dp
       do j = 1, iamat(1, i)
          sum = sum + amat(j, i)*amat(j, i)
       end do
@@ -633,7 +633,7 @@ contains
          work(l) = sum
       else
          work(l) = -abs(sum)
-         if (sum > 0.d0) then
+         if (sum > 0.0_dp) then
             do j = 1, iamat(1, i)
                amat(j, i) = -amat(j, i)
             end do
@@ -646,7 +646,7 @@ contains
 ! explicitly to zero
 
    do i = 1, nact
-      work(iwsv + iact(i)) = 0.d0
+      work(iwsv + iact(i)) = 0.0_dp
    end do
 
 ! we weight each violation by the number of non-zero elements in the
@@ -656,7 +656,7 @@ contains
 ! take always the first constraint which is violated. ;-)
 
    nvl = 0
-   temp = 0.d0
+   temp = 0.0_dp
    do i = 1, q
       if (work(iwsv + i) < temp*work(iwnbv + i)) then
          nvl = i
@@ -676,7 +676,7 @@ contains
 
 55 continue
    do i = 1, n
-      sum = 0.d0
+      sum = 0.0_dp
       do j = 1, iamat(1, nvl)
          sum = sum + dmat(iamat(j + 1, nvl), i)*amat(j, nvl)
       end do
@@ -687,7 +687,7 @@ contains
 
    l1 = iwzv
    do i = 1, n
-      work(l1 + i) = 0.d0
+      work(l1 + i) = 0.0_dp
    end do
    do j = nact + 1, n
       do i = 1, n
@@ -710,7 +710,7 @@ contains
       sum = sum/work(l1)
       work(iwrv + i) = sum
       if (iact(i) <= meq) cycle
-      if (sum <= 0.d0) cycle
+      if (sum <= 0.0_dp) cycle
       t1inf = .false.
       it1 = i
    end do
@@ -723,7 +723,7 @@ contains
       t1 = work(iwuv + it1)/work(iwrv + it1)
       do i = 1, nact
          if (iact(i) <= meq) cycle
-         if (work(iwrv + i) <= 0.d0) cycle
+         if (work(iwrv + i) <= 0.0_dp) cycle
          temp = work(iwuv + i)/work(iwrv + i)
          if (temp < t1) then
             t1 = temp
@@ -734,7 +734,7 @@ contains
 
 ! test if the z vector is equal to zero
 
-   sum = 0.d0
+   sum = 0.0_dp
    do i = iwzv + 1, iwzv + n
       sum = sum + work(i)*work(i)
    end do
@@ -764,7 +764,7 @@ contains
 ! the constraint becomes feasible.
 ! keep sum (which is z^tn^+) to update crval below!
 
-      sum = 0.d0
+      sum = 0.0_dp
       do i = 1, iamat(1, nvl)
          sum = sum + work(iwzv + iamat(i + 1, nvl))*amat(i, nvl)
       end do
@@ -825,7 +825,7 @@ contains
 ! if it is already zero we don't have to do anything, except of
 ! decreasing l1
 
-               if (work(i) == 0.d0) cycle
+               if (work(i) == 0.0_dp) cycle
                gc = max(abs(work(i - 1)), abs(work(i)))
                gs = min(abs(work(i - 1)), abs(work(i)))
                temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(i - 1))
@@ -841,8 +841,8 @@ contains
 ! otherwise we have to apply the givens rotation to these columns.
 ! the i-1 element of d has to be updated to temp.
 
-               if (gc == 1.d0) cycle
-               if (gc == 0.d0) then
+               if (gc == 1.0_dp) cycle
+               if (gc == 0.0_dp) then
                   work(i - 1) = gs*temp
                   do j = 1, n
                      temp = dmat(j, i - 1)
@@ -851,7 +851,7 @@ contains
                   end do
                else
                   work(i - 1) = temp
-                  nu = gs/(1.d0 + gc)
+                  nu = gs/(1.0_dp + gc)
                   do j = 1, n
                      temp = gc*dmat(j, i - 1) + gs*dmat(j, i)
                      dmat(j, i) = nu*(dmat(j, i - 1) + temp) - dmat(j, i)
@@ -880,7 +880,7 @@ contains
             work(iwsv + nvl) = sum
          else
             work(iwsv + nvl) = -abs(sum)
-            if (sum > 0.d0) then
+            if (sum > 0.0_dp) then
                do j = 1, iamat(1, nvl)
                   amat(j, nvl) = -amat(j, nvl)
                end do
@@ -913,7 +913,7 @@ contains
 
    l = iwrm + (it1*(it1 + 1))/2 + 1
    l1 = l + it1
-   if (work(l1) == 0.d0) go to 798
+   if (work(l1) == 0.0_dp) go to 798
    gc = max(abs(work(l1 - 1)), abs(work(l1)))
    gs = min(abs(work(l1 - 1)), abs(work(l1)))
    temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(l1 - 1))
@@ -928,8 +928,8 @@ contains
 ! r and columns in j, we can ignore the sign of gs.
 ! otherwise we have to apply the givens rotation to these rows/columns.
 
-   if (gc == 1.d0) go to 798
-   if (gc == 0.d0) then
+   if (gc == 1.0_dp) go to 798
+   if (gc == 0.0_dp) then
       do i = it1 + 1, nact
          temp = work(l1 - 1)
          work(l1 - 1) = work(l1)
@@ -942,7 +942,7 @@ contains
          dmat(i, it1 + 1) = temp
       end do
    else
-      nu = gs/(1.d0 + gc)
+      nu = gs/(1.0_dp + gc)
       do i = it1 + 1, nact
          temp = gc*work(l1 - 1) + gs*work(l1)
          work(l1) = nu*(work(l1 - 1) + temp) - work(l1)
@@ -976,7 +976,7 @@ contains
    it1 = it1 + 1
    if (it1 < nact) go to 797
 799 work(iwuv + nact) = work(iwuv + nact + 1)
-   work(iwuv + nact + 1) = 0.d0
+   work(iwuv + nact + 1) = 0.0_dp
    iact(nact) = 0
    nact = nact - 1
    iter(2) = iter(2) + 1

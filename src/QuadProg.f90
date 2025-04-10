@@ -5,7 +5,7 @@ module QuadProg
 
    public :: dp
    public :: solve
-   public :: qpgen2
+   public :: qpgen1, qpgen2
 
    type, public :: OptimizeResult
       real(dp), allocatable :: x(:)
