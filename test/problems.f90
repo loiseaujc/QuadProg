@@ -22,6 +22,7 @@ contains
                   new_unittest("Unconstrained QP problem", test_problem_1), &
                   new_unittest("(Legacy) Unconstrained QP problem", test_legacy_problem_1), &
                   new_unittest("Inequality Constrained QP problem", test_problem_2), &
+                  new_unittest("(Legacy) Inequality Constrained QP problem", test_problem_2), &
                   new_unittest("Equality Constrained QP problem", test_problem_3) &
                   ]
    end subroutine
@@ -103,6 +104,67 @@ contains
    !-----                                 -----
    !-------------------------------------------
 
+   subroutine test_legacy_problem_2(error)
+      type(error_type), allocatable, intent(out) :: error
+      integer, parameter :: n = 3
+      ! Size of the problem.
+      real(dp) :: P(n, n), q(n), C(n, n), d(n), obj
+      real(dp), allocatable :: x(:), y(:)
+      real(dp), allocatable :: work(:)
+      integer               :: i, neq, ncons, r, lwork, nact, iter(2), info
+      integer, allocatable  :: iact(:)
+
+      ! Setup problem.
+      P = 0.0_dp; forall (i=1:n) P(i, i) = 1.0_dp
+      q = [0.0_dp, 5.0_dp, 0.0_dp]
+      C(1, :) = [-4, 2, 0]
+      C(2, :) = [-3, 1, -2]
+      C(3, :) = [0, 0, 1]
+      d = [-8, 2, 0]
+
+      ! Setup the constraints.
+      neq = 0; ncons = 3
+      !> Allocate data.
+      allocate (iact(ncons))
+      allocate (x, source=q); x = 0.0_dp
+      allocate (y(ncons)); y = 0.0_dp
+      !> Allocate workspace
+      r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
+      allocate (work(lwork)); work = 0.0_dp
+      !> Get the constraints matrix and vector.
+      !> Solve the QP problem.
+      info = 0 ! P is already factorized when defining the QP.
+      call qpgen2(P, q, n, n, x, y, obj, C, d, n, ncons, neq, iact, nact, iter, work, info)
+
+      !> Check QuadProg info message.
+      call check(error, info == 0, &
+                 "QP solver did not converge.")
+      if (allocated(error)) return
+      !> Check solution correctness.
+      block
+         real(dp) :: xref(n)
+         ! Reference solution.
+         real(dp) :: yref(n), obj_ref
+         ! Reference Lagrange multipliers, reference cost.
+
+         xref = [0.4761905_dp, 1.0476190_dp, 2.0952381_dp]
+         yref = [0.0_dp, 0.2380952_dp, 2.0952381_dp]
+         obj_ref = -2.380952380952381_dp
+
+         !> Constrained solution.
+         call check(error, maxval(abs(xref - x)) < 1e-6_dp, &
+                    "Constrained solution is not correct.")
+         if (allocated(error)) return
+         !> Lagrange multipliers.
+         call check(error, maxval(abs(yref - y)) < 1e-6_dp, &
+                    "Lagrange mutilpliers are not correct.")
+         if (allocated(error)) return
+         !> Objective value.
+         call check(error, abs(obj_ref - obj) < 1e-6_dp, &
+                    "Minimum cost is not correct.")
+         if (allocated(error)) return
+      end block
+   end subroutine
    subroutine test_problem_2(error)
       type(error_type), allocatable, intent(out) :: error
       integer, parameter :: n = 3
