@@ -30,6 +30,7 @@ using an [active set method](https://en.wikipedia.org/wiki/Active-set_method). I
  - All obsolescent features (`goto`, etc) have been removed. It is now 100% standard compliant (Fortran 2018).
  - It makes use of derived-type and easy to use interfaces. The `qp_problem` class is used to defined the quadratic program and `solve` to compute its solution.
  - Calls to `blas` functions and subroutines now replace some hand-crafted implementations for improved performances.
+ - Calls to `lapack` subroutines now replace the original functionalities provided by [`linpack`](https://www.netlib.org/linpack/).
 
 
 ### Building QuadProg
@@ -53,7 +54,7 @@ QuadProg = { git="https://github.com/loiseaujc/QuadProg.git"}
 
 ### Dependencies
 
-The library requires some [`blas`](https://netlib.org/blas/) routines which are not included. You thus need to have it available on your system.
+The library requires some [`blas`](https://netlib.org/blas/) and [`lapack`](https://www.netlib.org/lapack/) routines which are not included. You thus need to have it available on your system.
 
 ### Example
 
