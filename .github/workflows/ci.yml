@@ -69,3 +69,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: build/coverage/coverage.info
+          slug: loiseaujc/quadprog
