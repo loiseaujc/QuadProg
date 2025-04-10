@@ -87,21 +87,6 @@ module QuadProg
       end subroutine
    end interface
 
-   interface
-      module subroutine dpofa(A, lda, n, info)
-         integer, intent(in) :: lda
-         real(dp), intent(out) :: A(lda, *)
-         integer, intent(in) :: n
-         integer, intent(out) :: info
-      end subroutine
-
-      module subroutine dpori(A, lda, n)
-         integer, intent(in) :: lda
-         real(dp), intent(out) :: A(lda, *)
-         integer, intent(in) :: n
-      end subroutine
-   end interface
-
 contains
 
    type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
