@@ -20,6 +20,7 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
       testsuite = [ &
                   new_unittest("Unconstrained QP problem", test_problem_1), &
+                  new_unittest("(Legacy) Unconstrained QP problem", test_legacy_problem_1), &
                   new_unittest("Inequality Constrained QP problem", test_problem_2), &
                   new_unittest("Equality Constrained QP problem", test_problem_3) &
                   ]
@@ -30,6 +31,44 @@ contains
    !-----     UNCONSTRAINED QR PROBLEMS     -----
    !-----                                   -----
    !---------------------------------------------
+   subroutine test_legacy_problem_1(error)
+      type(error_type), allocatable, intent(out) :: error
+      ! Size of the problem.
+      integer, parameter :: n = 3
+      ! Quadratic Problem.
+      real(dp) :: P(n, n), q(n), obj
+      real(dp), allocatable :: x(:), y(:), G(:, :), h(:)
+      real(dp), allocatable :: work(:)
+      integer               :: i, neq, ncons, r, lwork, nact, iter(2), info
+      integer, allocatable  :: iact(:)
+
+      ! Setup the quadratic form.
+      P = 0.0_dp; forall (i=1:n) P(i, i) = 1.0_dp; q = 1.0_dp
+
+      ! Setup the constraints.
+      neq = 0; ncons = 0
+      !> Allocate data.
+      allocate (iact(ncons))
+      allocate (x, source=q); x = 0.0_dp
+      allocate (y(ncons)); y = 0.0_dp
+      !> Allocate workspace
+      r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
+      allocate (work(lwork)); work = 0.0_dp
+      !> Get the constraints matrix and vector.
+      allocate (G(1, 1), h(1)); G = 0.0_dp; h = 0.0_dp
+      !> Solve the QP problem.
+      info = 1 ! P is already factorized when defining the QP.
+      call qpgen2(P, q, n, n, x, y, obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+
+      !> Check QuadProg info message.
+      call check(error, info == 0, &
+                 "QP solver did not converge.")
+
+      !> Check solution correctness.
+      call check(error, norm2(matmul(P, x) - q) < rtol, &
+                 "Unconstrained QP solution is not accurate.")
+      if (allocated(error)) return
+   end subroutine
 
    subroutine test_problem_1(error)
       type(error_type), allocatable, intent(out) :: error
