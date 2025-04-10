@@ -98,12 +98,12 @@ contains
 
    if (ierr == 0) then
       !> Matrix has not been factorized yet.
-      call dpofa(dmat, fddmat, n, info)   ! Cholesky factorization.
+      call dpotrf("u", fddmat, dmat, n, info)   ! Cholesky factorization.
       if (info /= 0) then
          ierr = 2; return
       end if
-      call dposl(dmat, fddmat, n, dvec)   ! Solve Ax = b with pre-computed Chol. fact.
-      call dpori(dmat, fddmat, n)         ! Compute inv(A) from pre-computed Chol. fact.
+      call dpotrs("u", fddmat, 1, dmat, n, dvec, n, info)   ! Solve Ax = b using Chol. fact.
+      call dtrtri("u", "n", fddmat, dmat, n, info) ! Compute inv(R) from Chol. fact.
    else
       !> Matrix has already been pre-factorized by calling dpofa and dpori.
       !> Multiply by inv(R).T

@@ -108,7 +108,7 @@ contains
       real(dp), intent(in)           :: P(:, :), q(:)
       real(dp), optional, intent(in) :: A(:, :), b(:)
       real(dp), optional, intent(in) :: C(:, :), d(:)
-      integer :: info
+      integer :: info, n
 
       prob%neq = 0; prob%ncons = 0
 
@@ -117,11 +117,11 @@ contains
       if (size(P, 1) /= size(q)) error stop "Matrix P and vector q have incompatible dimensions."
 
       !> Quadratic cost.
-      prob%P = P; prob%q = q
+      prob%P = P; prob%q = q; n = size(P, 1)
 
       !> Pre-factorize the symmetric positive definite matrix.
-      call dpofa(prob%P, size(P, 1), size(P, 2), info)
-      call dpori(prob%P, size(P, 1), size(P, 2))
+      call dpotrf("u", n, prob%P, n, info)
+      call dtrtri("u", "n", n, prob%P, n, info)
 
       !> Sanity checks for the equality constraints.
       if (present(A) .and. .not. present(b)) error stop "Right-hand side vector b for the equality constraints is missing."
