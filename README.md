@@ -26,7 +26,7 @@ $$
 using an [active set method](https://en.wikipedia.org/wiki/Active-set_method). It is most efficient for small to moderate sized QP described using dense matrices.
 
 **Updates to the original code include:**
- - Sources have been translated from F77 fixed-form to f90 free-form.
+ - Sources have been translated from FORTRAN 77 fixed-form to Fortran 90 free-form.
  - All obsolescent features (`goto`, etc) have been removed. It is now 100% standard compliant (Fortran 2018).
  - It makes use of derived-type and easy to use interfaces. The `qp_problem` class is used to defined the quadratic program and `solve` to compute its solution.
  - Calls to `blas` functions and subroutines now replace some hand-crafted implementations for improved performances.
