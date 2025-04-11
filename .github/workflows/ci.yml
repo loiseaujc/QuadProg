@@ -52,6 +52,11 @@ jobs:
         run: |
           fpm test --profile debug --flag "${{ join(matrix.toolchain.flags, ' ') }}"
 
+      - name: Run examples
+        run: |
+          fpm run --profile debug --flag "${{ join(matrix.toolchain.flags, ' ') }}" --example mpc
+          fpm run --profile debug --flag "${{ join(matrix.toolchain.flags, ' ') }}" --example compact_mpc
+
       - name: Create coverage report
         if: contains( matrix.os, 'ubuntu')
         run: |
