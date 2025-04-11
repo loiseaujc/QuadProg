@@ -30,4 +30,6 @@
 *.exe
 *.out
 *.app
-example/mpc/mpc_response.dat
+
+# Text data
+*.dat
