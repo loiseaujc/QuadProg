@@ -1,4 +1,4 @@
-module mpc_utilities
+module compact_mpc_utilities
    use QuadProg
    implicit none
    private
@@ -29,10 +29,11 @@ module mpc_utilities
       !! Plant to be controlled.
       integer               :: horizon
       !! Horizon of the MPC problem.
-      type(qp_problem) :: prob
+      type(compact_qp_problem) :: prob
       real(dp), allocatable :: P(:, :), q(:, :), x0(:)
       !! Condensed quadratic cost function + initial condition
       real(dp), allocatable :: C(:, :), d(:)
+      integer, allocatable  :: icmat(:, :)
       !! Inequality constraints.
    contains
       procedure, pass(self), public :: compute
@@ -81,11 +82,11 @@ contains
       !! State cost (assumed constant over time).
       real(dp), intent(in) :: R(:, :)
       !! Input cost (assumed constant over time).
-      real(dp), optional, intent(in) :: u_ub(:), u_lb(:)
+      real(dp), intent(in) :: u_ub(:), u_lb(:)
       !! Upper and lower-bounds for the input (assumed constant over time.)
 
-      integer :: nstates, ninputs ! Number of states and inputs
-      integer :: i, j, ncons
+      integer :: nstates, ninputs, n ! Number of states and inputs
+      integer :: i, j, ncons, i_start
       real(dp), allocatable :: blkdiag_Q(:, :), blkdiag_R(:, :)
       real(dp), allocatable :: O(:, :), blktoeplitz_B(:, :)
 
@@ -102,17 +103,11 @@ contains
       if (size(R, 1) /= ninputs) error stop "Dimensions of R are inconsistent with the number of inputs."
 
       !> Sanity checks for the input's box constraints.
-      if (present(u_ub)) then
-         if (size(u_ub) /= ninputs*horizon) error stop "Dimension of u_ub is inconsistent with the number of inputs."
-      end if
-      if (present(u_lb)) then
-         if (size(u_lb) /= ninputs*horizon) error stop "Dimension of u_lb is inconsistent with the number of inputs."
-      end if
-      if (present(u_lb) .and. present(u_ub)) then
-         do i = 1, size(u_lb)
-            if (u_lb(i) > u_ub(i)) error stop "Upper and lower bounds are incompatible."
-         end do
-      end if
+      if (size(u_ub) /= ninputs*horizon) error stop "Dimension of u_ub is inconsistent with the number of inputs."
+      if (size(u_lb) /= ninputs*horizon) error stop "Dimension of u_lb is inconsistent with the number of inputs."
+      do i = 1, size(u_lb)
+         if (u_lb(i) > u_ub(i)) error stop "Upper and lower bounds are incompatible."
+      end do
 
       !> Sanity check for the MPC optimization horizon.
       if (horizon <= 0) error stop "Horizon needs to be strictly positive."
@@ -133,40 +128,29 @@ contains
       !-----     Construction of the input's box constraints     -----
       !---------------------------------------------------------------
 
-      ncons = 0
-      if (present(u_ub)) ncons = ncons + ninputs*horizon
-      if (present(u_lb)) ncons = ncons + ninputs*horizon
+      ncons = 2*ninputs*horizon; n = size(controller%P, 1)
 
       if (ncons /= 0) then
-         allocate (controller%C(ncons, ninputs*horizon)); controller%C = 0.0_dp
+         allocate (controller%C(1, ncons)); controller%C = 0.0_dp
+         allocate (controller%icmat(2, ncons)); controller%icmat = 0
          allocate (controller%d(ncons)); controller%d = 0.0_dp
 
-         block
-            integer :: i_start
-            if (present(u_ub)) then
-               i_start = 1
-               do concurrent(i=i_start:ninputs*horizon)
-                  controller%C(i, i) = -1.0_dp
-                  controller%d(i) = -u_ub(i)
-               end do
-            end if
+         controller%icmat(1, :) = 1
+         do i = 1, n
+            controller%icmat(2, i) = i
+            controller%icmat(2, i + n) = i
+         end do
 
-            if (present(u_lb)) then
-               i_start = 1; if (present(u_ub)) i_start = i_start + ninputs*horizon
-               do concurrent(i=i_start:(i_start - 1) + ninputs*horizon)
-                  controller%C(i, i - i_start + 1) = 1.0_dp
-                  controller%d(i) = u_lb(i - i_start + 1)
-               end do
-            end if
-         end block
+         do i = 1, n
+            controller%C(1, i) = 1.0_dp
+            controller%C(1, i + n) = -1.0_dp
+            controller%d(i) = u_lb(i)
+            controller%d(i + n) = -u_ub(i)
+         end do
       end if
 
       !> Initialize the resulting QP problem.
-      if (allocated(controller%C)) then
-         controller%prob = qp_problem(controller%P, controller%q(:, 1), C=controller%C, d=controller%d)
-      else
-         controller%prob = qp_problem(controller%P, controller%q(:, 1))
-      end if
+      controller%prob = compact_qp_problem(controller%P, controller%q(:, 1), C=controller%C, d=controller%d, icmat=controller%icmat)
    end function
 
    !-----------------------------------------
@@ -181,7 +165,7 @@ contains
       self%prob%q = -matmul(self%q, x0)
       opt = solve(self%prob)
       if (.not. opt%success) error stop "Quadratic solver failed to find a solution."
-      u = opt%x(1)
+      u = opt%x(1:size(self%plant%B, 2))
       return
    end function
 
@@ -259,7 +243,7 @@ contains
 end module
 
 program mpc_examples
-   use mpc_utilities
+   use compact_mpc_utilities
    implicit none
    integer :: i, j
 
@@ -277,7 +261,7 @@ program mpc_examples
       integer, parameter :: nt = int(T/dt)
       real(dp) :: x(2, 0:nt), y(1, 0:nt), u(1, 0:nt)
 
-      integer, parameter :: horizon = int(5_dp/dt)
+      integer, parameter :: horizon = int(5.0_dp/dt)
       !! Horizon for the MPC controller.
 
       real(dp) :: Q(2, 2), R(1, 1), cost
@@ -329,7 +313,7 @@ program mpc_examples
 
       print *, "Total cost :", cost
 
-      open (unit=1234, file="example/mpc/mpc_response.dat")
+      open (unit=1234, file="example/compact_mpc/mpc_response.dat")
       do i = 0, nt
          write (1234, *) i*dt, x(1, i), x(2, i), u(1, i)
       end do
