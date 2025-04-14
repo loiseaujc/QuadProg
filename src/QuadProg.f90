@@ -5,7 +5,12 @@ module QuadProg
 
    public :: dp
    public :: solve
+   public :: nnls
    public :: qpgen1, qpgen2
+
+   !---------------------------------
+   !-----     DERIVED-TYPES     -----
+   !---------------------------------
 
    type, public :: OptimizeResult
       real(dp), allocatable :: x(:)
@@ -50,10 +55,18 @@ module QuadProg
       module procedure initialize_compact_qp_problem
    end interface
 
+   !---------------------------------------------------
+   !-----     INTERFACE FOR SOLVE(QP_PROBLEM)     -----
+   !---------------------------------------------------
+
    interface solve
       module procedure solve_standard_qp
       module procedure solve_compact_qp
    end interface
+
+   !--------------------------------------------------------------
+   !-----     INTERFACES FOR THE QUADPROG LEGACY DRIVERS     -----
+   !--------------------------------------------------------------
 
    interface
       module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, fdamat, q, &
@@ -108,6 +121,26 @@ module QuadProg
          real(dp), intent(out)   :: crval
          !! Cost function at the optimum.
       end subroutine
+   end interface
+
+   !------------------------------------------------------------------------
+   !-----     INTERFACES FOR THE REGULARIZED LEAST-SQUARES SOLVERS     -----
+   !------------------------------------------------------------------------
+
+   interface
+      module function nnls(A, b, lambda) result(x)
+         real(dp), intent(in)           :: A(:, :)
+         real(dp), intent(in)           :: b(:)
+         real(dp), optional, intent(in) :: lambda
+         real(dp), allocatable          :: x(:)
+      end function
+
+      module function lasso(A, b, lambda) result(x)
+         real(dp), intent(in)  :: A(:, :)
+         real(dp), intent(in)  :: b(:)
+         real(dp), intent(in)  :: lambda
+         real(dp), allocatable :: x(:)
+      end function
    end interface
 
 contains

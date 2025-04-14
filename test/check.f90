@@ -7,6 +7,7 @@ program check
    use QuadProg
    ! Collection of test problems.
    use TestProblems
+   use TestLstsqVariants
    implicit none
 
    ! Unit-test related.
@@ -16,7 +17,10 @@ program check
 
    ! Collection of test suites.
    status = 0
-   testsuites = [new_testsuite("Simple problems", collect_test_problems)]
+   testsuites = [ &
+                new_testsuite("Simple problems", collect_test_problems), &
+                new_testsuite("Least-squares variants", collect_lstsq_problems) &
+                ]
 
    ! Run all the test suites.
    do i = 1, size(testsuites)
