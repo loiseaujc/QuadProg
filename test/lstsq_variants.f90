@@ -19,7 +19,8 @@ contains
    subroutine collect_lstsq_problems(testsuite)
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
       testsuite = [ &
-                  new_unittest("Non-negative Least-Squares", test_nnls) &
+                  new_unittest("Non-negative Least-Squares", test_nnls), &
+                  new_unittest("Bounded-Variables Least-Squares n°1", test_bvls_1) &
                   ]
    end subroutine
 
@@ -46,6 +47,41 @@ contains
       xref = [0.4610_dp, 0.5611_dp, 0.0_dp]
       call check(error, maxval(x - xref) < 1e-4_dp, &
                  "NNLS did not find the correct solution.")
+      if (allocated(error)) return
+   end subroutine
+
+   subroutine test_bvls_1(error)
+      type(error_type), allocatable, intent(out) :: error
+      ! Size of the problem.
+      integer, parameter :: m = 4, n = 3
+      ! Least-Squares problem.
+      real(dp) :: A(m, n), b(m)
+      real(dp) :: x(n), xref(n)
+      real(dp) :: ub(n), lb(n)
+
+      ! Setup the least-squares problem.
+      A(1, :) = [1.0_dp, 1.0_dp, 2.0_dp]
+      A(2, :) = [10.0_dp, 11.0_dp, -9.0_dp]
+      A(3, :) = [-1.0_dp, 0.0_dp, 0.0_dp]
+      A(4, :) = [-5.0_dp, 6.0_dp, -7.0_dp]
+
+      b = [-1.0_dp, 11.0_dp, 0.0_dp, 1.0_dp]
+
+      ! Solve the nnls problem.
+      ub = huge(1.0_dp); lb = 0.0_dp
+      x = bvls(A, b, ub=ub, lb=lb)
+      !> Check solution.
+      xref = [0.4610_dp, 0.5611_dp, 0.0_dp]
+      call check(error, maxval(x - xref) < 1e-4_dp, &
+                 "BVLS did not find the correct solution.")
+      if (allocated(error)) return
+
+      ! Solve the nnls problem.
+      x = bvls(A, b, lb=lb)
+      !> Check solution.
+      xref = [0.4610_dp, 0.5611_dp, 0.0_dp]
+      call check(error, maxval(x - xref) < 1e-4_dp, &
+                 "BVLS did not find the correct solution.")
       if (allocated(error)) return
    end subroutine
 

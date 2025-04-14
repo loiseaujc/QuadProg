@@ -5,7 +5,7 @@ module QuadProg
 
    public :: dp
    public :: solve
-   public :: nnls
+   public :: nnls, bvls
    public :: qpgen1, qpgen2
 
    !---------------------------------
@@ -131,6 +131,14 @@ module QuadProg
       module function nnls(A, b) result(x)
          real(dp), intent(in)           :: A(:, :)
          real(dp), intent(in)           :: b(:)
+         real(dp), allocatable          :: x(:)
+      end function
+
+      module function bvls(A, b, ub, lb) result(x)
+         real(dp), intent(in)           :: A(:, :)
+         real(dp), intent(in)           :: b(:)
+         real(dp), optional, intent(in) :: ub(:)
+         real(dp), optional, intent(in) :: lb(:)
          real(dp), allocatable          :: x(:)
       end function
    end interface
