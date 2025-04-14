@@ -31,6 +31,7 @@ using an [active set method](https://en.wikipedia.org/wiki/Active-set_method). I
  - It makes use of derived-type and easy to use interfaces. The `qp_problem` class is used to defined the quadratic program and `solve` to compute its solution.
  - Calls to `blas` functions and subroutines now replace some hand-crafted implementations for improved performances.
  - Calls to `lapack` subroutines now replace the original functionalities provided by [`linpack`](https://www.netlib.org/linpack/).
+ - Utility solvers for non-negative least-squares (`nnls`) and bounded-variables least-squares (`bvls`) are provided.
 
 
 ### Building QuadProg
