@@ -124,23 +124,26 @@ module QuadProg
    end interface
 
    !------------------------------------------------------------------------
-   !-----     INTERFACES FOR THE REGULARIZED LEAST-SQUARES SOLVERS     -----
+   !-----     INTERFACES FOR THE VARIANTS OF LEAST-SQUARES SOLVERS     -----
    !------------------------------------------------------------------------
 
    interface
-      module function nnls(A, b, lambda) result(x)
+      module function nnls(A, b) result(x)
          real(dp), intent(in)           :: A(:, :)
          real(dp), intent(in)           :: b(:)
-         real(dp), optional, intent(in) :: lambda
          real(dp), allocatable          :: x(:)
       end function
+   end interface
 
-      module function lasso(A, b, lambda) result(x)
-         real(dp), intent(in)  :: A(:, :)
-         real(dp), intent(in)  :: b(:)
-         real(dp), intent(in)  :: lambda
-         real(dp), allocatable :: x(:)
-      end function
+   !---------------------------------------------------------------
+   !-----     INTERFACES FOR THE LINALG UTILITY FUNCTIONS     -----
+   !---------------------------------------------------------------
+
+   interface
+      module subroutine qr(A, Q, R)
+         real(dp), intent(in) :: A(:, :)
+         real(dp), allocatable, intent(out) :: Q(:, :), R(:, :)
+      end subroutine
    end interface
 
 contains
