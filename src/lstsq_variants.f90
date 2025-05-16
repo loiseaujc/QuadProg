@@ -26,11 +26,12 @@ contains
    if (size(b) /= m) error stop "A and b have inconsistent number of rows."
 
    !> Allocate matrices.
-   allocate (x(n)); x = 0.0_dp
+   allocate (x(n), source=0.0_dp)
 
    !> Constraint matrix.
-   allocate (C(1, n), icmat(2, n), d(n)); C = 1.0_dp; d = 0.0_dp
-   icmat(1, :) = 1; icmat(2, :) = [(i, i=1, n)]
+   allocate (C(1, n), source=1.0_dp)
+   allocate (d(n), source=0.0_dp)
+   allocate (icmat(2, n)); icmat(1, :) = 1; icmat(2, :) = [(i, i=1, n)]
 
    !> QR decomposition of the data matrix.
    call qr(A, Q, R)
@@ -45,7 +46,7 @@ contains
       integer :: neq, ncons, nact, iter(2), iact(n), lwork
       ! Prepare variables.
       neq = 0; ncons = n; lwork = 2*n + n*(n + 5)/2 + 2*n + 1
-      allocate (work(lwork)); work = 0.0_dp
+      allocate (work(lwork), source=0.0_dp)
       ! Solve QP.
       info = 1; qvec = matmul(transpose(A), b)
       call qpgen1(R, qvec, n, n, x, y, obj, C, icmat, d, 1, ncons, neq, iact, nact, iter, work, info)
@@ -96,15 +97,15 @@ contains
    end if
 
    !----- Sets up the problem -----
-   allocate (x(n)); x = 0.0_dp
+   allocate (x(n), source=0.0_dp)
 
    !> Constraint matrix.
    if (is_lower_bounded .and. .not. is_upper_bounded) then
-      allocate (C(1, n)); C = 1.0_dp; allocate (d, source=lb)
+      allocate (C(1, n), source=1.0_dp); allocate (d, source=lb)
       allocate (icmat(2, n)); icmat(1, :) = 1; icmat(2, :) = [(i, i=1, n)]
       ncons = n
    else if (is_upper_bounded .and. .not. is_lower_bounded) then
-      allocate (C(1, n)); C = 1.0_dp; allocate (d, source=ub)
+      allocate (C(1, n), source=1.0_dp); allocate (d, source=ub)
       allocate (icmat(2, n)); icmat(1, :) = 1; icmat(2, :) = [(i, i=1, n)]
       ncons = n
    else if (is_upper_bounded .and. is_lower_bounded) then
@@ -134,7 +135,7 @@ contains
       integer :: neq, nact, iter(2), iact(ncons), lwork, r_
       ! Prepare variables.
       neq = 0; ncons = n; r_ = min(n, ncons); lwork = 2*n + r_*(r_ + 5)/2 + 2*ncons + 1
-      allocate (work(lwork)); work = 0.0_dp
+      allocate (work(lwork), source=0.0_dp)
       ! Solve QP.
       info = 1; qvec = matmul(transpose(A), b)
       call qpgen1(R, qvec, n, n, x, y, obj, C, icmat, d, 1, ncons, neq, iact, nact, iter, work, info)

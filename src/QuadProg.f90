@@ -217,7 +217,7 @@ contains
       associate (n => size(prob%P, 1), neq => prob%neq, ncons => prob%ncons)
          is_constrained = allocated(prob%A) .or. allocated(prob%C)
          if (is_constrained) then
-            allocate (G(n, ncons), h(ncons)); G = 0.0_dp; h = 0.0_dp
+            allocate (G(n, ncons), h(ncons), source=0.0_dp)
             !> Linear equality constraints.
             if (allocated(prob%A)) then
                do i = 1, neq
@@ -231,7 +231,7 @@ contains
                end do
             end if
          else
-            allocate (G(1, 1), h(1)); G = 0.0_dp; h = 0.0_dp
+            allocate (G(1, 1), h(1), source=0.0_dp)
          end if
       end associate
 
@@ -250,11 +250,11 @@ contains
       !> Allocate data.
       allocate (iact(ncons))
       allocate (P, source=problem%P); allocate (q, source=problem%q)
-      allocate (result%x, source=q); result%x = 0.0_dp
-      allocate (result%y(ncons)); result%y = 0.0_dp
+      allocate (result%x, mold=q); result%x = 0.0_dp
+      allocate (result%y(ncons), source=0.0_dp)
       !> Allocate workspace
       r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-      allocate (work(lwork)); work = 0.0_dp
+      allocate (work(lwork), source=0.0_dp)
       !> Get the constraints matrix and vector.
       call get_constraints_matrix(problem, G, h)
       !> Solve the QP problem.
@@ -360,8 +360,8 @@ contains
                end if
             end if
          else
-            allocate (G(1, n), h(1)); G = 0.0_dp; h = 0.0_dp
-            allocate (igmat(2, n)); igmat = 0
+            allocate (G(1, n), h(1), source=0.0_dp)
+            allocate (igmat(2, n), source=0)
          end if
       end associate
 
@@ -382,12 +382,12 @@ contains
       !> Allocate data.
       allocate (iact(ncons))
       allocate (P, source=problem%P); allocate (q, source=problem%q)
-      allocate (result%x, source=q); result%x = 0.0_dp
-      allocate (result%y(ncons)); result%y = 0.0_dp
+      allocate (result%x, mold=q); result%x = 0.0_dp
+      allocate (result%y(ncons), source=0.0_dp)
 
       !> Allocate workspace
       r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-      allocate (work(lwork)); work = 0.0_dp
+      allocate (work(lwork), source=0.0_dp)
 
       !> Get the constraints matrix and vector.
       call get_compact_constraints_matrix(problem, G, igmat, h)
