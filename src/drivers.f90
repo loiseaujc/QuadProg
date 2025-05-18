@@ -611,9 +611,7 @@ contains
          end if
       end do
       if (nvl == 0) then
-         do i = 1, nact
-            lagr(iact(i)) = work(iwuv + i)
-         end do
+         lagr(iact(1:nact)) = work(iwuv + 1:nact)
          return
       end if
 
@@ -744,38 +742,18 @@ contains
                         !> Find the Givens rotation reducing the l1-th element of d to zero.
                         !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
-                        gc = max(abs(work(i - 1)), abs(work(i)))
-                        gs = min(abs(work(i - 1)), abs(work(i)))
-                        temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(i - 1))
-                        gc = work(i - 1)/temp
-                        gs = work(i)/temp
+                        call dlartg(work(i - 1), work(i), gc, gs, temp)
 
                         !> Givens rotation is done with the matrix [gc gs, gs -gc].
                         !>    -  If gc = 1, i-th element of d is zero compared with element
                         !>       (l1-1). Hence, do nothing.
-                        !>    -  If gc = 0, switch column i and column i-1 of J. Since we only
-                        !>       switch columns in J, need to be careful how d is updated
-                        !>       depending on the sign of gs.
                         !>    -  Else, Givens rotation is applied to the columns. The i-1
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
-                        if (gc == 0.0_dp) then
-                           work(i - 1) = gs*temp
-                           do j = 1, n
-                              temp = dmat(j, i - 1)
-                              dmat(j, i - 1) = dmat(j, i)
-                              dmat(j, i) = temp
-                           end do
-                        else
-                           work(i - 1) = temp
-                           nu = gs/(1.0_dp + gc)
-                           do j = 1, n
-                              temp = gc*dmat(j, i - 1) + gs*dmat(j, i)
-                              dmat(j, i) = nu*(dmat(j, i - 1) + temp) - dmat(j, i)
-                              dmat(j, i - 1) = temp
-                           end do
-                        end if
+                        work(i - 1) = temp
+                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, i - 1), n, temp, temp)
                      end do
+
                      !> l is still pointing to element (nact,nact) of the matrix r.
                      !> Store d(nact) in r(nact,nact)
                      work(l) = work(nact)
