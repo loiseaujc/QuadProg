@@ -109,11 +109,11 @@ More examples can be found in the dedicated folder [here](https://github.com/loi
 Beyond the source code translation from Fortran 77 to modern Fortran, computational performances have been improved by making explicit calls to the appropriate `blas` functions wherever appropriate.
 Similarly, the calls to the deprecated `linpack` functions have been replaced by their modern `lapack` equivalent.
 
-|     | Number of variables | Number of constraints | Legacy | Modern QuadProg |
-|:---:|:-------------------:|:---------------------:|:------:|:---------------:|
-|Problem n°1 |
-|Problem n°2 |
-|Problem n°3 |
+| Problem n° | Number of variables | Number of constraints | Legacy | Modern QuadProg |
+|:----------:|:-------------------:|:---------------------:|:------:|:---------------:|
+|       # 1 |
+|       # 2 |
+|       # 3 |
 
 The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems for the ??? test-suite.
 The platform considered is a something-something computer with something-something CPU.
@@ -129,6 +129,9 @@ Only the subset of dense problems from the [Maros-Mesaros](https://www.cuter.rl.
 
 **Strict convexity :** Making explicit usage of the Cholesky decomposition, `Modern QuadProg` (and its legacy ancestor) is limited to strictly convex QP (i.e. problems for which $\mathbf{P}$ is symmetric positive-definite).
 Note however that, when the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ at the expense of solving a slightly perturbed (albeit now strictly convex) problem. In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process.
+
+**Lack of interfaces with other languages :**
+
 
 # Acknowledgements
 
