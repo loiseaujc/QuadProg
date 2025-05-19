@@ -138,7 +138,7 @@ More examples can be found in the dedicated folder [here](https://github.com/loi
 
 # Performance considerations
 
-#### Comparison with the legacy implementation
+## Comparison with the legacy implementation
 
 Beyond the source code translation from Fortran 77 to modern Fortran, computational performances have been improved by making explicit calls to the appropriate `blas` functions wherever appropriate.
 Similarly, the calls to the deprecated `linpack` functions have been replaced by their modern `lapack` equivalent.
@@ -154,7 +154,7 @@ The platform considered is a something-something computer with something-somethi
 Both codes have been compiled with `gfortran 14` along with the following options: `-03 -march=native -mtune=native`.
 In all cases, the modernized implementation outperforms the legacy one, with speed-up reaching almost ??x on the largest problem considered.
 
-#### Comparison with other QP solvers
+## Comparison with other QP solvers
 
 We make use of the [`qpbenchmark`](https://github.com/qpsolvers/qpbenchmark/tree/main) [@qpbenchmark] utility `python` package to compare the performances of the modernized `QuadProg` implementation against a fairly complete set of alternatives.
 Only the subset of dense problems from the [Maros-Mesaros](https://www.cuter.rl.ac.uk/Problems/marmes.html) test suite is being considered.
