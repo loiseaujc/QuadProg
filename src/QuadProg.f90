@@ -64,9 +64,9 @@ module QuadProg
       module procedure solve_compact_qp
    end interface
 
-   !--------------------------------------------------------------
-   !-----     INTERFACES FOR THE QUADPROG LEGACY DRIVERS     -----
-   !--------------------------------------------------------------
+   !------------------------------------------------------------------
+   !-----     INTERFACES FOR THE QUADPROG MODERNIZED DRIVERS     -----
+   !------------------------------------------------------------------
 
    interface
       module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, fdamat, q, &

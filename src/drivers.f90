@@ -14,7 +14,7 @@
 !  along with this program; if not, write to the free software
 !  foundation, inc., 59 temple place - suite 330, boston, ma 02111-1307,
 !  usa.
-submodule(quadprog) quadprog_legacy
+submodule(quadprog) modernized_drivers
    use quadprog_constants, only: dp
 contains
 !  this routine uses the goldfarb/idnani algorithm to solve the
