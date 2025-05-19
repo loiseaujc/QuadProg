@@ -37,9 +37,43 @@ A specialized implementation is also provided when the constraints are described
 
 # Statement of need
 
+Many problems in science and engineering can be formulated as convex quadratic problems. A non-exhaustive list includes: support vector machines in classical machine learning, Markowitz portfolio optimization in financial mathematics, or linear model predictive control in system engineering. Likewise, solving convex QPs forms the computational bottleneck of many optimization algorithms, e.g. *Newton's method* in convex optimization or *sequential linear-quadratic programming* for nonlinear optimization problems with twice differentiable objective and constraints.
+
 ## A modernized implementation
 
+Among the many algorithms proposed over the years to solve convex QPs, the method by @goldfarb-idnani has proven to be one of the most numerically stable and accurate of all. A popular implementation of this algorithm is `quadprog` by Berwin Turlach, interfaced with the `R` programming language as early as 1997 by Andreas Weingessel [@turlach2007quadprog]. Since then, `quadprog` has been ported to many different languages, including [JavaScript](https://github.com/albertosantini/quadprog), [Rust](https://docs.rs/quadprog/latest/quadprog/), or [Julia](https://github.com/fabienlefloch/GoldfarbIdnaniSolver.jl).
+Yet, very little effort within the Fortran community has been devoted to modernizing the Fortran source code itself. This contribution is a step in this direction. It is part of a wider community-driven effort aiming at modernizing the overall Fortran ecosystem.
+
+Written in FORTRAN 77, the original `quadprog` implementation makes use of language features now considered as obsolete. Moreover, `blas` and `lapack` being not as well established back then as they are today, many vector and matrix-vector operations relied on simple implementations, potentially hindering the use of modern CPU instructions or hardware acceleration. In our modernization effort, the most important updates to the original code include:
+
+- Sources have been translated from FORTRAN 77 fixed-form to Fortran 90 free-from.
+- All obsolescent features (`goto`, `continue`, etc) have been removed and the code base now is fully compliant with the Fortran 2018 standard.
+- Calls to appropriate `blas` functions now replace most hand-crafted implementations for improved performances.
+- Calls to appropriate `lapack` now replace the functionalities originally provided by `linpack`.
+
+While we retained the definition of the original interfaces (see `qpgen1` and `qpgen2`), we also provide modern object-oriented interfaces (see next section) as well as utility functions so solve non-negative least-squares (`nnls`) and bounded-variables least-squares (`bvls`).
+
 ## A modern object-oriented interface
+
+A notable introduction in `Modern QuadProg` is the definition of modern object-oriented interfaces. Given the datum $\mathbf{P}$, $\mathbf{q}$, $\mathbf{A}$, $\mathbf{b}$, $\mathbf{C}$ and $\mathbf{d}$ defining the quadratic problem, a `qp_problem` instance can be created as follows
+
+```fortran
+problem = qp_problem(P, q, A=A, b=b, C=C, d=d)
+```
+
+where `A`, `b`, `C` and `d` are optional arguments. It needs to be noted that, while we do check that the dimensions of the different matrices and vectors are consistent, it is left to the user to make sure $\mathbf{P}$ is indeed symmetric as its factorization relies on `lapack` and makes use only of the upper triangular part of $\mathbf{P}$.
+Once defined, this problem can be solved with
+
+```fortran
+solution = solve(problem)
+```
+
+where `solution` is a derived-type with the following attributes
+
+- `solution%x` : Solution of the QP.
+- `solution%y` : Corresponding vector of Lagrange multipliers.
+- `solution%obj` : Minimum of the objective function evaluated at the constrained solution.
+- `solution%success` : Boolean flag determining whether the solver terminated successfully (`solution%success = .true.`) or if the problem is unfeasible (`solution%success = .false.`).
 
 # Example
 
@@ -100,7 +134,7 @@ Additionally, `Modern QuadProg` exposes the following specialized interfaces:
 - `x = lasso(A, b, lambda)`: solve the $\ell_1$-regularized least-squares problem.
 - `x = elastic_net(A, b, l1, l2)` : solve the mixed $\ell_1$-$\ell_2$ regularized least-squares problem.
 
-More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example). These include the construction of a linear MPC controller with bounded actuation, logistic regression and SVM classifiers, as well as a Markowitz portfolio optimization problem.
+More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example). These include the construction of a linear MPC controller with bounded actuation, an SVM classifier, as well as a Markowitz portfolio optimization problem.
 
 # Performance considerations
 
@@ -131,6 +165,8 @@ Only the subset of dense problems from the [Maros-Mesaros](https://www.cuter.rl.
 Note however that, when the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ at the expense of solving a slightly perturbed (albeit now strictly convex) problem. In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process.
 
 **Lack of interfaces with other languages :**
+
+**Build system :**
 
 
 # Acknowledgements
