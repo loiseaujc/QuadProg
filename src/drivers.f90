@@ -205,18 +205,11 @@ contains
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
             t1inf = .true.
-            do i = nact, 1, -1
-               sum = work(i)
-               l = iwrm + (i*(i + 3))/2
-               l1 = l - i
-               do j = i + 1, nact
-                  sum = sum - work(l)*work(iwrv + j)
-                  l = l + j
-               end do
-               sum = sum/work(l1)
-               work(iwrv + i) = sum
+            call dcopy(nact, work(1:nact), 1, work(iwrv + 1:nact), 1)
+            call dtpsv("u", "n", "n", nact, work(iwrm + 1:nact), work(iwrv + 1:nact), 1)
+            do i = 1, nact
                if (iact(i) <= meq) cycle
-               if (sum <= 0.0_dp) cycle
+               if (work(i) <= 0.0_dp) cycle
                t1inf = .false.
                it1 = i
             end do
