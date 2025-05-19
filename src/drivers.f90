@@ -83,7 +83,7 @@ contains
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
    logical  :: t1inf, t2min
-   real(dp) :: dnrm2, ddot
+   real(dp) :: dnrm2, ddot, residuals(q)
 
    r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
    vsmall = epsilon(1.0_dp)                           ! Machine precision.
@@ -149,10 +149,12 @@ contains
       !> Verify all constraints.
       !>    - Check which are being violated.
       !>    - For equality ones, the normal vector may have to be negated, bvec also.
+      call dcopy(q, bvec, 1, residuals, 1)
+      call dgemv("t", n, q, 1.0_dp, amat, n, sol, 1, -1.0_dp, residuals, 1)
       l = iwsv
       do i = 1, q
          l = l + 1
-         sum = -bvec(i) + ddot(n, amat(1:n, i), 1, sol(1:n), 1)
+         sum = residuals(i)
          if (abs(sum) < vsmall) sum = 0.0_dp
          if (i > meq) then
             work(l) = sum
@@ -161,6 +163,7 @@ contains
             if (sum > 0.0_dp) then
                call dscal(n, -1.0_dp, amat(1:n, i), 1)
                bvec(i) = -bvec(i)
+               residuals(i) = -residuals(i)
             end if
          end if
       end do
@@ -325,7 +328,8 @@ contains
                   !>    -  Continue to step 2(a) (marked by label 55).
                   !> Since fit changed, we need to recalculate by "how much" the chosen
                   !> constraint is now violated.
-                  sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
+                  ! sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
+                  sum = residuals(i)
                   if (nvl > meq) then
                      work(iwsv + nvl) = sum
                   else
@@ -333,6 +337,7 @@ contains
                      if (sum > 0.0_dp) then
                         call dscal(n, -1.0_dp, amat(1:n, nvl), 1)
                         bvec(nvl) = -bvec(nvl)
+                        residuals(nvl) = -residuals(nvl)
                      end if
                   end if
                   exit block700
