@@ -83,7 +83,7 @@ contains
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
    logical  :: t1inf, t2min
-   real(dp) :: dnrm2, ddot
+   real(dp) :: dnrm2, ddot, constraints_residuals(q)
 
    r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
    vsmall = epsilon(1.0_dp)                           ! Machine precision.
@@ -149,10 +149,12 @@ contains
       !> Verify all constraints.
       !>    - Check which are being violated.
       !>    - For equality ones, the normal vector may have to be negated, bvec also.
+      call dcopy(q, bvec, 1, constraints_residuals, 1)
+      call dgemv("t", n, q, 1.0_dp, amat, n, sol, 1, -1.0_dp, constraints_residuals, 1)
       l = iwsv
       do i = 1, q
          l = l + 1
-         sum = -bvec(i) + ddot(n, amat(1:n, i), 1, sol(1:n), 1)
+         sum = constraints_residuals(i)
          if (abs(sum) < vsmall) sum = 0.0_dp
          if (i > meq) then
             work(l) = sum
@@ -161,6 +163,7 @@ contains
             if (sum > 0.0_dp) then
                call dscal(n, -1.0_dp, amat(1:n, i), 1)
                bvec(i) = -bvec(i)
+               constraints_residuals(i) = -constraints_residuals(i)
             end if
          end if
       end do
@@ -176,8 +179,7 @@ contains
       temp = 0.0_dp
       do i = 1, q
          if (work(iwsv + i) < temp*work(iwnbv + i)) then
-            nvl = i
-            temp = work(iwsv + i)/work(iwnbv + i)
+            nvl = i; temp = work(iwsv + i)/work(iwnbv + i)
          end if
       end do
       if (nvl == 0) then
@@ -258,11 +260,9 @@ contains
                sum = ddot(n, work(iwzv + 1:iwzv + n), 1, amat(1:n, nvl), 1)
                tt = -work(iwsv + nvl)/sum
                t2min = .true.
-               if (.not. t1inf) then
-                  if (t1 < tt) then
-                     tt = t1
-                     t2min = .false.
-                  end if
+               if ((.not. t1inf) .and. (t1 < tt)) then
+                  tt = t1
+                  t2min = .false.
                end if
 
                !> Take step in primal and dual space.
@@ -284,10 +284,8 @@ contains
                   !>    -  Put the first nact-1 components of the d vector into column
                   !>       nact of r.
                   l = iwrm + ((nact - 1)*nact)/2 + 1
-                  do i = 1, nact - 1
-                     work(l) = work(i)
-                     l = l + 1
-                  end do
+                  call dcopy(nact - 1, work(1:nact - 1), 1, work(l:l + nact - 2), 1)
+                  l = l + nact - 1
 
                   !> If nact = n:
                   !>    -  Add the last element to the new row or r.
@@ -325,7 +323,7 @@ contains
                   !>    -  Continue to step 2(a) (marked by label 55).
                   !> Since fit changed, we need to recalculate by "how much" the chosen
                   !> constraint is now violated.
-                  sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
+                  sum = constraints_residuals(nvl)
                   if (nvl > meq) then
                      work(iwsv + nvl) = sum
                   else
@@ -622,7 +620,7 @@ contains
       loop55: do
          block700: block
 
-            do i = 1, n
+            do concurrent(i=1:n)
                sum = 0.0_dp
                do j = 1, iamat(1, nvl)
                   sum = sum + dmat(iamat(j + 1, nvl), i)*amat(j, nvl)
@@ -723,10 +721,12 @@ contains
                   !>    -  Put the first nact-1 components of the d vector into column
                   !>       nact of r.
                   l = iwrm + ((nact - 1)*nact)/2 + 1
-                  do i = 1, nact - 1
-                     work(l) = work(i)
-                     l = l + 1
-                  end do
+                  call dcopy(nact - 1, work(1:nact - 1), 1, work(l:l + nact - 2), 1)
+                  l = l + nact - 1
+                  ! do i = 1, nact - 1
+                  !    work(l) = work(i)
+                  !    l = l + 1
+                  ! end do
 
                   !> If nact = n:
                   !>    -  Add the last element to the new row or r.
