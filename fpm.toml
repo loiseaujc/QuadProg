@@ -41,6 +41,14 @@ source-dir = "example/mpc"
 name = "compact_mpc"
 source-dir = "example/compact_mpc"
 
+#----------------------------------------------------
+#-----     Markowitz Portoflio Optimization     -----
+#----------------------------------------------------
+
+[[example]]
+name = "markowitz"
+source-dir = "example/markowitz"
+
 # #------------------------------------------------------
 # #-----     Non-negative least-squares example     -----
 # #------------------------------------------------------
