@@ -49,20 +49,19 @@ Written in FORTRAN 77, the original `quadprog` implementation makes use of langu
 - Sources have been translated from FORTRAN 77 fixed-form to Fortran 90 free-from.
 - All obsolescent features (`goto`, `continue`, etc) have been removed and the code base now is fully compliant with the Fortran 2018 standard.
 - Calls to appropriate `blas` functions now replace most hand-crafted implementations for improved performances.
-- Calls to appropriate `lapack` now replace the functionalities originally provided by `linpack`.
+- Calls to appropriate `lapack` functions now replace the functionalities originally provided by `linpack`.
 
-While we retained the definition of the original interfaces (see `qpgen1` and `qpgen2`), we also provide modern object-oriented interfaces (see next section) as well as utility functions so solve non-negative least-squares (`nnls`) and bounded-variables least-squares (`bvls`).
+While we retained the definition of the original interfaces (see `qpgen1` and `qpgen2`), we also provide modern object-oriented interfaces (see `qp_problem`) as well as utility functions to solve non-negative least-squares (`nnls`) and bounded-variables least-squares (`bvls`).
 
 ## A modern object-oriented interface
 
-A notable introduction in `Modern QuadProg` is the definition of modern object-oriented interfaces. Given the datum $\mathbf{P}$, $\mathbf{q}$, $\mathbf{A}$, $\mathbf{b}$, $\mathbf{C}$ and $\mathbf{d}$ defining the quadratic problem, a `qp_problem` instance can be created as follows
+A notable introduction in `Modern QuadProg` is the definition of object-oriented interfaces. Given the datum $\mathbf{P}$, $\mathbf{q}$, $\mathbf{A}$, $\mathbf{b}$, $\mathbf{C}$ and $\mathbf{d}$ defining the quadratic problem, a `qp_problem` instance can be created as follows
 
 ```fortran
 problem = qp_problem(P, q, A=A, b=b, C=C, d=d)
 ```
 
-where `A`, `b`, `C` and `d` are optional arguments. It needs to be noted that, while we do check that the dimensions of the different matrices and vectors are consistent, it is left to the user to make sure $\mathbf{P}$ is indeed symmetric as its factorization relies on `lapack` and makes use only of the upper triangular part of $\mathbf{P}$.
-Once defined, this problem can be solved with
+where `A`, `b`, `C` and `d` are optional arguments. It needs to be noted that, while we do check that the dimensions of the different matrices and vectors are consistent, it is left to the user to make sure $\mathbf{P}$ is indeed symmetric as its factorization relies on `lapack` and makes use only of its upper triangular part. Once instantiated, this problem can be solved with
 
 ```fortran
 solution = solve(problem)
@@ -70,7 +69,7 @@ solution = solve(problem)
 
 where `solution` is a derived-type with the following attributes
 
-- `solution%x` : Solution of the QP.
+- `solution%x` : Solution of the constrained QP.
 - `solution%y` : Corresponding vector of Lagrange multipliers.
 - `solution%obj` : Minimum of the objective function evaluated at the constrained solution.
 - `solution%success` : Boolean flag determining whether the solver terminated successfully (`solution%success = .true.`) or if the problem is unfeasible (`solution%success = .false.`).
@@ -149,25 +148,22 @@ Similarly, the calls to the deprecated `linpack` functions have been replaced by
 |       # 2 |
 |       # 3 |
 
-The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems for the ??? test-suite.
+The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems from the ??? test-suite.
 The platform considered is a something-something computer with something-something CPU.
 Both codes have been compiled with `gfortran 14` along with the following options: `-03 -march=native -mtune=native`.
 In all cases, the modernized implementation outperforms the legacy one, with speed-up reaching almost ??x on the largest problem considered.
 
 ## Comparison with other QP solvers
 
-We make use of the [`qpbenchmark`](https://github.com/qpsolvers/qpbenchmark/tree/main) [@qpbenchmark] utility `python` package to compare the performances of the modernized `QuadProg` implementation against a fairly complete set of alternatives.
-Only the subset of dense problems from the [Maros-Mesaros](https://www.cuter.rl.ac.uk/Problems/marmes.html) test suite is being considered.
+We make use of the [`qpbenchmark`](https://github.com/qpsolvers/qpbenchmark/tree/main) [@qpbenchmark] `python` package to compare the performances of the modernized `quadprog` implementation against a fairly complete set of alternatives.
+Only the subset of strictly convex dense problems from the [Maros-Mesaros](https://www.cuter.rl.ac.uk/Problems/marmes.html) test suite is being considered.
 
 # Limitations and perspectives
 
-**Strict convexity :** Making explicit usage of the Cholesky decomposition, `Modern QuadProg` (and its legacy ancestor) is limited to strictly convex QP (i.e. problems for which $\mathbf{P}$ is symmetric positive-definite).
-Note however that, when the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ at the expense of solving a slightly perturbed (albeit now strictly convex) problem. In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process.
+**Strict convexity :** `Modern QuadProg` (and its legacy ancestor) is limited to strictly convex QP (i.e. problems for which $\mathbf{P}$ is symmetric positive-definite).
+Note however that, when the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ at the expense of solving a slightly perturbed (albeit now strictly convex) problem. In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process. Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @bolland1996dual. 
 
-**Lack of interfaces with other languages :**
-
-**Build system :**
-
+**Limited interfaces with other languages :** For the sake of simplicity, we currently provide only simple bindings with `Python`. These have been generated via the ??? utility built on-top of `f2py`. Interfacing with `C` or `R` is also being considered albeit not planned for the moment. Contributions by interested users are most welcome.
 
 # Acknowledgements
 
