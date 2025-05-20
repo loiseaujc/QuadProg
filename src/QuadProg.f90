@@ -227,7 +227,7 @@ contains
             !> Linear inequality constraints.
             if (allocated(prob%C)) then
                do i = neq + 1, ncons
-                  G(:, i) = prob%C(i, :); h(i) = prob%d(i)
+                  G(:, i) = prob%C(i - neq, :); h(i) = prob%d(i - neq)
                end do
             end if
          else
