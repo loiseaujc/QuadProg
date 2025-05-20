@@ -179,9 +179,7 @@ contains
 
       !> Pre-factorize the symmetric positive definite matrix.
       call dpotrf("u", n, prob%P, n, info)
-      if (info /= 0) error stop
       call dtrtri("u", "n", n, prob%P, n, info)
-      if (info /= 0) error stop
 
       !> Sanity checks for the equality constraints.
       if (present(A) .and. .not. present(b)) error stop "Right-hand side vector b for the equality constraints is missing."
