@@ -238,8 +238,10 @@ contains
       return
    end subroutine
 
-   type(OptimizeResult) function solve_standard_qp(problem) result(result)
+   type(OptimizeResult) function solve_standard_qp(problem, legacy) result(result)
       type(qp_problem), intent(in) :: problem
+      logical, optional, intent(in) :: legacy
+      logical :: legacy_
       real(dp), allocatable :: P(:, :), q(:)
       real(dp), allocatable :: G(:, :), h(:)
       real(dp), allocatable :: work(:)
@@ -247,6 +249,7 @@ contains
       integer, allocatable  :: iact(:)
 
       n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
+      legacy_ = .false.; if (present(legacy)) legacy_ = legacy
       !> Allocate data.
       allocate (iact(ncons))
       allocate (P, source=problem%P); allocate (q, source=problem%q)
@@ -259,7 +262,11 @@ contains
       call get_constraints_matrix(problem, G, h)
       !> Solve the QP problem.
       info = 1 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+      if (legacy_) then
+         call legacy_qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+      else
+         call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+      end if
       !> Success?
       result%success = (info == 0)
       return
