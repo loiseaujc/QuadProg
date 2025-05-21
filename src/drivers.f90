@@ -357,12 +357,11 @@ contains
                l = iwrm + (it1*(it1 + 1))/2 + 1
                l1 = l + it1
                if (work(l1) /= 0.0_dp) then ! first go to 798
-                  call dlartg(work(l1 - 1), work(l1), gc, gs, temp)
-                  ! gc = max(abs(work(l1 - 1)), abs(work(l1)))
-                  ! gs = min(abs(work(l1 - 1)), abs(work(l1)))
-                  ! temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(l1 - 1))
-                  ! gc = work(l1 - 1)/temp
-                  ! gs = work(l1)/temp
+                  gc = max(abs(work(l1 - 1)), abs(work(l1)))
+                  gs = min(abs(work(l1 - 1)), abs(work(l1)))
+                  temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(l1 - 1))
+                  gc = work(l1 - 1)/temp
+                  gs = work(l1)/temp
 
                   !> Givens rotation is done with the matrix [gc gc ; gs -gc].
                   !> If gc = 0:
@@ -379,12 +378,11 @@ contains
                            work(l1) = temp
                            l1 = l1 + i
                         end do
-                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, it1), n, temp, temp)
-                        ! do i = 1, n
-                        !    temp = dmat(i, it1)
-                        !    dmat(i, it1) = dmat(i, it1 + 1)
-                        !    dmat(i, it1 + 1) = temp
-                        ! end do
+                        do i = 1, n
+                           temp = dmat(i, it1)
+                           dmat(i, it1) = dmat(i, it1 + 1)
+                           dmat(i, it1 + 1) = temp
+                        end do
                      else
                         nu = gs/(1.0_dp + gc)
                         do i = it1 + 1, nact
@@ -393,12 +391,11 @@ contains
                            work(l1 - 1) = temp
                            l1 = l1 + i
                         end do
-                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, it1), n, temp, temp)
-                        ! do i = 1, n
-                        !    temp = gc*dmat(i, it1) + gs*dmat(i, it1 + 1)
-                        !    dmat(i, it1 + 1) = nu*(dmat(i, it1) + temp) - dmat(i, it1 + 1)
-                        !    dmat(i, it1) = temp
-                        ! end do
+                        do i = 1, n
+                           temp = gc*dmat(i, it1) + gs*dmat(i, it1 + 1)
+                           dmat(i, it1 + 1) = nu*(dmat(i, it1) + temp) - dmat(i, it1 + 1)
+                           dmat(i, it1) = temp
+                        end do
                      end if
                      ! shift column (it1+1) of r to column (it1) (that is, the first it1
                      ! elements). the posit1on of element (1,it1+1) of r was calculated above
