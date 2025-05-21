@@ -265,7 +265,7 @@ contains
       if (legacy_) then
          call legacy_qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
       else
-         call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+         call modern_qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
       end if
       !> Success?
       result%success = (info == 0)
