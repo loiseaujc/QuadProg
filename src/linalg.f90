@@ -17,7 +17,7 @@ contains
    call dgeqrf(m, n, Q, m, tau, work, lwork, info)
 
    !> QR factorization.
-   lwork = work(1); deallocate (work); allocate (work(lwork))
+   lwork = int(work(1)); deallocate (work); allocate (work(lwork))
    call dgeqrf(m, n, Q, m, tau, work, lwork, info)
 
    !> Extract the R matrix.

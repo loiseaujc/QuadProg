@@ -335,7 +335,7 @@ contains
 
       ! Internal variables.
       logical :: is_constrained
-      integer :: i, ma, na, mc, nc
+      integer :: ma, na, mc, nc
 
       associate (n => size(prob%P, 1), neq => prob%neq, ncons => prob%ncons)
          is_constrained = allocated(prob%A) .or. allocated(prob%C)

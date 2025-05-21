@@ -81,7 +81,7 @@ contains
 
    module procedure qpgen2
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
+   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
    real(dp) :: dnrm2, ddot, residuals(q)
 
@@ -502,7 +502,7 @@ contains
 
    module procedure qpgen1
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
+   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
    real(dp) :: dnrm2, ddot
 
