@@ -149,13 +149,13 @@ contains
       !> Verify all constraints.
       !>    - Check which are being violated.
       !>    - For equality ones, the normal vector may have to be negated, bvec also.
-      ! call dcopy(q, bvec, 1, residuals, 1)
-      ! call dgemv("t", n, q, 1.0_dp, amat, n, sol, 1, -1.0_dp, residuals, 1)
+      call dcopy(q, bvec, 1, residuals, 1)
+      call dgemv("t", n, q, 1.0_dp, amat, n, sol, 1, -1.0_dp, residuals, 1)
       l = iwsv
       do i = 1, q
          l = l + 1
-         ! sum = residuals(i)
-         sum = -bvec(i) + ddot(n, amat(1:n, i), 1, sol(1:n), 1)
+         sum = residuals(i)
+         ! sum = -bvec(i) + ddot(n, amat(1:n, i), 1, sol(1:n), 1)
          if (abs(sum) < vsmall) sum = 0.0_dp
          if (i > meq) then
             work(l) = sum
