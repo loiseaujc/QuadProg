@@ -16,7 +16,7 @@ contains
    integer, allocatable     :: icmat(:, :)
 
    ! Miscellaneous.
-   integer :: i, j, info
+   integer :: i, info
 
    !> Get problem's dimensions.
    m = size(A, 1); n = size(A, 2)
@@ -67,7 +67,7 @@ contains
    integer, allocatable  :: icmat(:, :)
 
    ! Miscellaneous.
-   integer :: i, j, info, ncons
+   integer :: i, info, ncons
    logical :: is_upper_bounded, is_lower_bounded
 
    !> Get problem's dimensions.

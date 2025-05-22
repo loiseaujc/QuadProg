@@ -22,7 +22,7 @@ auto-executables = true
 auto-examples = true
 auto-tests = true
 module-naming = false # ???
-link = ["blas", "lapack"]
+link = ["lapack", "blas"]
 
 [library]
 source-dir="src"

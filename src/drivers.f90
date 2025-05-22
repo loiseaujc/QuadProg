@@ -81,7 +81,7 @@ contains
 
    module procedure qpgen2
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
+   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
    real(dp) :: dnrm2, ddot, residuals(q)
 
@@ -163,7 +163,6 @@ contains
             if (sum > 0.0_dp) then
                call dscal(n, -1.0_dp, amat(1:n, i), 1)
                bvec(i) = -bvec(i)
-               residuals(i) = -residuals(i)
             end if
          end if
       end do
@@ -199,17 +198,18 @@ contains
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
+            work(l1 + 1:l1 + n) = 0.0_dp
             call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
             t1inf = .true.
-            call dcopy(nact, work(1:nact), 1, work(iwrv + 1:nact), 1)
-            call dtpsv("u", "n", "n", nact, work(iwrm + 1:nact), work(iwrv + 1:nact), 1)
+            call dcopy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
+            call dtpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), work(iwrv + 1:iwrv + nact), 1)
             do i = 1, nact
                if (iact(i) <= meq) cycle
-               if (work(i) <= 0.0_dp) cycle
+               if (work(iwrv + i) <= 0.0_dp) cycle
                t1inf = .false.
                it1 = i
             end do
@@ -321,8 +321,8 @@ contains
                   !>    -  Continue to step 2(a) (marked by label 55).
                   !> Since fit changed, we need to recalculate by "how much" the chosen
                   !> constraint is now violated.
-                  ! sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
-                  sum = residuals(i)
+                  sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
+                  ! sum = residuals(i)
                   if (nvl > meq) then
                      work(iwsv + nvl) = sum
                   else
@@ -330,7 +330,7 @@ contains
                      if (sum > 0.0_dp) then
                         call dscal(n, -1.0_dp, amat(1:n, nvl), 1)
                         bvec(nvl) = -bvec(nvl)
-                        residuals(nvl) = -residuals(nvl)
+                        ! residuals(nvl) = -residuals(nvl)
                      end if
                   end if
                   exit block700
@@ -502,7 +502,7 @@ contains
 
    module procedure qpgen1
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
+   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
    real(dp) :: dnrm2, ddot
 
@@ -630,6 +630,7 @@ contains
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
+            work(l1 + 1:l1 + n) = 0.0_dp
             call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
