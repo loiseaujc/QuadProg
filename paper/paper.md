@@ -163,7 +163,7 @@ In most applications, this small regularization might hardly change the result o
 Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @boland1996dual. 
 
 **Lack of interfaces with other languages :** We do not currently provide bindings to other languages.
-Interfacing `Fortran` codes with `Python` can however be done relatively easily using utilities such as [`f2py`] [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
+Interfacing `Fortran` codes with `Python` can however be done relatively easily using utilities such as `f2py` [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
 Similar packages likely exist to interface with other languages (e.g. `R` or `Julia`).
 Note moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language as well.
 
