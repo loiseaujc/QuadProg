@@ -19,8 +19,7 @@ bibliography: paper.bib
 
 # Summary
 
-`Modern QuadProg` is a modernized implementation of the original Fortran 77 `quadprog` solver written by Berwin A. Turlach.
-It can be used to solve strictly convex quadratic programs (QP) of the form
+`Modern QuadProg` is a modernized implementation of the original Fortran 77 `quadprog` solver written by Berwin A. Turlach to solve strictly convex quadratic programs (QP) of the form
 
 $$
 \begin{aligned}
@@ -31,7 +30,7 @@ $$
 $$
 
 where $\mathbf{P} \in \mathbb{R}^{n \times n}$ is a symmetric positive-definite matrix.
-Based on the method originally proposed by @goldfarb-idnani, the linear equality and inequality constraints are handled using an *active set method*.
+Based on the method by @goldfarb-idnani, the linear constraints are handled using an *active set method*.
 The solver is most efficient for small to moderate sized QP described using dense matrices.
 A specialized implementation is also provided when the constraints are described by a set of sparse equations.
 
@@ -42,7 +41,7 @@ Many problems in science and engineering can be formulated as convex quadratic p
 ## A modernized implementation
 
 Among the many algorithms proposed over the years to solve convex QPs, the method by @goldfarb-idnani has proven to be one of the most numerically stable and accurate of all. A popular implementation of this algorithm is `quadprog` by Berwin Turlach, interfaced with the `R` programming language as early as 1997 by Andreas Weingessel [@turlach2007quadprog]. Since then, `quadprog` has been ported to many different languages, including [JavaScript](https://github.com/albertosantini/quadprog), [Rust](https://docs.rs/quadprog/latest/quadprog/), or [Julia](https://github.com/fabienlefloch/GoldfarbIdnaniSolver.jl).
-Yet, very little effort within the Fortran community has been devoted to modernizing the Fortran source code itself. This contribution is a step in this direction. It is part of a wider community-driven effort aiming at modernizing the overall Fortran ecosystem.
+Yet, very little effort within the Fortran community has been devoted to modernizing the original Fortran source code. This contribution is a step in this direction. It is part of a wider community-driven effort aiming at modernizing the overall Fortran ecosystem.
 
 Written in FORTRAN 77, the original `quadprog` implementation makes use of language features now considered as obsolete. Moreover, `blas` and `lapack` being not as well established back then as they are today, many vector and matrix-vector operations relied on simple implementations, potentially hindering the use of modern CPU instructions or hardware acceleration. In our modernization effort, the most important updates to the original code include:
 
@@ -116,7 +115,7 @@ program example
 
     !> Solve the inequality constrained QP.
     prob = qp_problem(P, q, C=C, d=d)
-    solution = solve(prob)
+    solution = solve(prob) ! pass legacy=.true. to use the original F77 driver.
 
     if (solution%success) then
         print *, "x   =", solution%x ! Solution of the QP.
@@ -138,20 +137,20 @@ More examples can be found in the dedicated folder [here](https://github.com/loi
 Beyond the source code translation from Fortran 77 to modern Fortran, computational performances have been improved by making explicit calls to the appropriate `blas` functions wherever appropriate.
 Similarly, the calls to the deprecated `linpack` functions have been replaced by their modern `lapack` equivalent.
 
-| Problem n° | Number of variables | Number of constraints | Legacy | Modern QuadProg |
-|:----------:|:-------------------:|:---------------------:|:------:|:---------------:|
-|       # 1 |
-|       # 2 |
-|       # 3 |
+| Problem ID  | Number of variables | Number of constraints | Legacy | Modern QuadProg |
+|:-----------:|:-------------------:|:---------------------:|:------:|:---------------:|
+|       # 1   |
+|       # 2   |
+|       # 3   |
 
 The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems from the Maros-Meszaros test suite [@maros-meszaros].
-This test suite contains 138 problems convex quadratic programs.
+This test suite contains 138 convex quadratic problems.
 Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to problems having fewer than 4000 optimization variables and 10 000 constraints.
 The platform considered is a something-something computer with something-something CPU.
-Both the legacy and modernized solver have been compiled with `gfortran 14` along with the following options: `-03 -march=native -mtune=native`.
-The `blas`/`lapack` backend used in `openblas 0.3.29` installed using `conda`.
+Both the legacy and modernized solvers have been compiled with `gfortran 14.2.0` along with the following options: `-03 -march=native -mtune=native`.
+The `blas`/`lapack` backend used is `openblas 0.3.29` installed using `conda`.
 To ensure a fair comparison, `openblas` was restricted to using a single thread.
-In addition, the legacy solver providing the option to use a pre-factorized matrix $\mathbf{P}$, we restrict the timings to the active set method only.
+In addition, both solvers providing the option to use a pre-factorized matrix $\mathbf{P}$, we restrict the timings to the active set method only.
 In all cases, the modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3.
 These improved performances result almost entirely from the use of `blas` and `lapack` for the different matrix-vector and matrix-matrix operations.
 A complete breakdown of these benchmarks can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
