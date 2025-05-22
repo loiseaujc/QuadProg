@@ -155,7 +155,6 @@ contains
       do i = 1, q
          l = l + 1
          sum = residuals(i)
-         ! sum = -bvec(i) + ddot(n, amat(1:n, i), 1, sol(1:n), 1)
          if (abs(sum) < vsmall) sum = 0.0_dp
          if (i > meq) then
             work(l) = sum
@@ -164,7 +163,6 @@ contains
             if (sum > 0.0_dp) then
                call dscal(n, -1.0_dp, amat(1:n, i), 1)
                bvec(i) = -bvec(i)
-               ! residuals(i) = -residuals(i)
             end if
          end if
       end do
@@ -200,17 +198,18 @@ contains
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
+            work(l1 + 1:l1 + n) = 0.0_dp
             call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
             t1inf = .true.
-            call dcopy(nact, work(1:nact), 1, work(iwrv + 1:nact), 1)
-            call dtpsv("u", "n", "n", nact, work(iwrm + 1:nact), work(iwrv + 1:nact), 1)
+            call dcopy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
+            call dtpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), work(iwrv + 1:iwrv + nact), 1)
             do i = 1, nact
                if (iact(i) <= meq) cycle
-               if (work(i) <= 0.0_dp) cycle
+               if (work(iwrv + i) <= 0.0_dp) cycle
                t1inf = .false.
                it1 = i
             end do
@@ -631,6 +630,7 @@ contains
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
+            work(l1 + 1:l1 + n) = 0.0_dp
             call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
