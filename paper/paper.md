@@ -130,14 +130,10 @@ Additionally, `Modern QuadProg` exposes the following specialized interfaces:
 
 - `x = nnls(A, b)` : solve a non-negative least-squares problem.
 - `x = bvls(A, b, ub, lb)` : solve the bounded least-squares problem.
-- `x = lasso(A, b, lambda)`: solve the $\ell_1$-regularized least-squares problem.
-- `x = elastic_net(A, b, l1, l2)` : solve the mixed $\ell_1$-$\ell_2$ regularized least-squares problem.
 
 More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example). These include the construction of a linear MPC controller with bounded actuation, an SVM classifier, as well as a Markowitz portfolio optimization problem.
 
 # Performance considerations
-
-## Comparison with the legacy implementation
 
 Beyond the source code translation from Fortran 77 to modern Fortran, computational performances have been improved by making explicit calls to the appropriate `blas` functions wherever appropriate.
 Similarly, the calls to the deprecated `linpack` functions have been replaced by their modern `lapack` equivalent.
@@ -148,22 +144,29 @@ Similarly, the calls to the deprecated `linpack` functions have been replaced by
 |       # 2 |
 |       # 3 |
 
-The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems from the ??? test-suite.
+The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems from the Maros-Meszaros test suite [@maros-meszaros].
+This test suite contains 138 problems convex quadratic programs.
+Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to problems having fewer than 4000 optimization variables and 10 000 constraints.
 The platform considered is a something-something computer with something-something CPU.
-Both codes have been compiled with `gfortran 14` along with the following options: `-03 -march=native -mtune=native`.
-In all cases, the modernized implementation outperforms the legacy one, with speed-up reaching almost ??x on the largest problem considered.
-
-## Comparison with other QP solvers
-
-We make use of the [`qpbenchmark`](https://github.com/qpsolvers/qpbenchmark/tree/main) [@qpbenchmark] `python` package to compare the performances of the modernized `quadprog` implementation against a fairly complete set of alternatives.
-Only the subset of strictly convex dense problems from the [Maros-Mesaros](https://www.cuter.rl.ac.uk/Problems/marmes.html) test suite is being considered.
+Both the legacy and modernized solver have been compiled with `gfortran 14` along with the following options: `-03 -march=native -mtune=native`.
+The `blas`/`lapack` backend used in `openblas 0.3.29` installed using `conda`.
+To ensure a fair comparison, `openblas` was restricted to using a single thread.
+In addition, the legacy solver providing the option to use a pre-factorized matrix $\mathbf{P}$, we restrict the timings to the active set method only.
+In all cases, the modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3.
+These improved performances result almost entirely from the use of `blas` and `lapack` for the different matrix-vector and matrix-matrix operations.
+A complete breakdown of these benchmarks can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
 
 # Limitations and perspectives
 
 **Strict convexity :** `Modern QuadProg` (and its legacy ancestor) is limited to strictly convex QP (i.e. problems for which $\mathbf{P}$ is symmetric positive-definite).
-Note however that, when the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ at the expense of solving a slightly perturbed (albeit now strictly convex) problem. In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process. Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @bolland1996dual. 
+When the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ at the expense of solving a slightly perturbed (albeit now strictly convex) problem.
+In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process.
+Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @bolland1996dual. 
 
-**Limited interfaces with other languages :** For the sake of simplicity, we currently provide only simple bindings with `Python`. These have been generated via the ??? utility built on-top of `f2py`. Interfacing with `C` or `R` is also being considered albeit not planned for the moment. Contributions by interested users are most welcome.
+**Lack of interfaces with other languages :** We do not currently provide bindings to other languages.
+Interfacing `Fortran` codes with `Python` can however be done relatively easily using utilities such as [`f2py`]() [@f2py] or [`f90wrap`]() [@f90wrap].
+Similar packages likely exist to interface with other languages (e.g. `R` or `Julia`).
+Note moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language as well.
 
 # Acknowledgements
 
