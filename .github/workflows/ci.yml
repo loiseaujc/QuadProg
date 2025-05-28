@@ -35,7 +35,7 @@ jobs:
         if: contains( matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install libblas-dev liblapack-dev
+          sudo apt-get install libblas-dev liblapack-dev liblapack3
 
       - name: Prepare for code coverage
         if: contains( matrix.os, 'ubuntu')
