@@ -18,11 +18,10 @@ implicit-external = true
 source-form = "default"
 
 [build]
-auto-executables = true
-auto-examples = true
+auto-executables = false
+auto-examples = false
 auto-tests = true
-module-naming = false # ???
-link = ["lapack", "blas"]
+link = ["openblas"]
 
 [library]
 source-dir="src"

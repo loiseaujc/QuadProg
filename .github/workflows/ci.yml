@@ -35,7 +35,7 @@ jobs:
            --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.gcc_v }} 100 \
            --slave /usr/bin/gfortran gfortran /usr/bin/gfortran-${{ matrix.gcc_v }} \
            --slave /usr/bin/gcov gcov /usr/bin/gcov-${{ matrix.gcc_v }}
-        sudo apt-get install libopenblas-dev libblas-dev liblapack-dev
+        sudo apt-get install libopenblas-dev 
  
     - name: Run tests
       run: fpm test --profile debug --flag -coverage
