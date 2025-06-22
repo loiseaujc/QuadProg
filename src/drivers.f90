@@ -183,7 +183,7 @@ contains
          end if
       end do
       if (nvl == 0) then
-         lagr(iact(1:nact)) = work(iwuv + 1:nact)
+         lagr(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
          return
       end if
 
@@ -609,7 +609,7 @@ contains
          end if
       end do
       if (nvl == 0) then
-         lagr(iact(1:nact)) = work(iwuv + 1:nact)
+         lagr(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
          return
       end if
 
