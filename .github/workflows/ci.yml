@@ -12,8 +12,8 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gfortran
-            flag-debug: ""
-            flag-release: ""
+            flag-debug: "-Wno-external-argument-mismatch"
+            flag-release: "-Wno-external-argument-mismatch"
             extra-packages: "openblas"
           - os: ubuntu-latest
             compiler: ifx
