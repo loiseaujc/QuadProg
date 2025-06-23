@@ -65,7 +65,7 @@ jobs:
         run: |
           fpm run --compiler ${{ matrix.compiler }} --profile debug --example mpc --flag "${{ matrix.flag-debug }}" --verbose
           fpm run --compiler ${{ matrix.compiler }} --profile debug --example compact_mpc --flag "${{ matrix.flag-debug }}" --verbose
-          fpm run --compiler ${{ matrix.compiler }} --profile debug --example monkewitz --flag "${{ matrix.flag-debug }}" --verbose
+          fpm run --compiler ${{ matrix.compiler }} --profile debug --example markowitz --flag "${{ matrix.flag-debug }}" --verbose
 
       - name: Create coverage report
         if: contains( matrix.os, 'ubuntu') && contains( matrix.compiler, 'gfortran')
