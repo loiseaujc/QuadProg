@@ -88,9 +88,11 @@ jobs:
 
       - name: Upload coverage report
         if: contains( matrix.os, 'ubuntu') && contains( matrix.compiler, 'gfortran')
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: build/coverage/coverage.info
+          verbose: true
 
 
 
