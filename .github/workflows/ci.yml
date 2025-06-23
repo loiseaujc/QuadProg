@@ -31,11 +31,12 @@ jobs:
             flag-debug: "-Wno-external-argument-mismatch"
             flag-release: "-Wno-external-argument-mismatch"
             extra-packages: "openblas, lcov"
+
+        exclude:
+          - os: macos-latest
+            compiler: flang-new
           - os: macos-latest
             compiler: ifx
-            flag-debug: ""
-            flag-release: ""
-            extra-packages: "openblas"
            
     steps:
       - name: Checkout repository
