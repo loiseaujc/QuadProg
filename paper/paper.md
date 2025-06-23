@@ -36,7 +36,7 @@ A specialized implementation is also provided when the constraints are described
 
 # Statement of need
 
-Many problems in science and engineering can be formulated as convex quadratic problems. A non-exhaustive list includes: support vector machines in classical machine learning, Markowitz portfolio optimization in financial mathematics, or linear model predictive control in system engineering. Likewise, solving convex QPs forms the computational bottleneck of many optimization algorithms, e.g. *Newton's method* in convex optimization or *sequential linear-quadratic programming* for nonlinear optimization problems with twice differentiable objective and constraints.
+Many problems in science and engineering can be formulated as convex quadratic problems. A non-exhaustive list includes: support vector machines in machine learning, Markowitz portfolio optimization in financial mathematics, or linear model predictive control in system engineering. Additionally, solving convex QPs forms the computational bottleneck of many optimization algorithms, e.g. *Newton's method* or *sequential linear-quadratic programming* for nonlinear optimization problems with twice differentiable objective and constraints.
 
 ## A modernized implementation
 
@@ -47,8 +47,7 @@ Written in FORTRAN 77, the original `quadprog` implementation makes use of langu
 
 - Sources have been translated from FORTRAN 77 fixed-form to Fortran 90 free-from.
 - All obsolescent features (`goto`, `continue`, etc) have been removed and the code base now is fully compliant with the Fortran 2018 standard.
-- Calls to appropriate `blas` functions now replace most hand-crafted implementations for improved performances.
-- Calls to appropriate `lapack` functions now replace the functionalities originally provided by `linpack`.
+- Calls to appropriate `blas` and `lapack` functions now replace most hand-crafted or `linpack` implementations for improved performances.
 
 While we retained the definition of the original interfaces (see `qpgen1` and `qpgen2`), we also provide modern object-oriented interfaces (see `qp_problem`) as well as utility functions to solve non-negative least-squares (`nnls`) and bounded-variables least-squares (`bvls`).
 
@@ -66,12 +65,7 @@ where `A`, `b`, `C` and `d` are optional arguments. It needs to be noted that, w
 solution = solve(problem)
 ```
 
-where `solution` is a derived-type with the following attributes
-
-- `solution%x` : Solution of the constrained QP.
-- `solution%y` : Corresponding vector of Lagrange multipliers.
-- `solution%obj` : Minimum of the objective function evaluated at the constrained solution.
-- `solution%success` : Boolean flag determining whether the solver terminated successfully (`solution%success = .true.`) or if the problem is unfeasible (`solution%success = .false.`).
+where `solution` is a derived-type storing the solution of the constrained QP, the vector of Lagrange multipliers and the minimum of the objective function evaluated at the constrained solution.
 
 # Example
 
@@ -137,23 +131,23 @@ More examples can be found in the dedicated folder [here](https://github.com/loi
 Beyond the source code translation from Fortran 77 to modern Fortran, computational performances have been improved by making explicit calls to the appropriate `blas` functions wherever appropriate.
 Similarly, calls to deprecated `linpack` functions have been replaced by their modern `lapack` equivalent.
 
-| Problem ID  | Number of variables | Number of constraints | Legacy | Modern |
-|:-----------:|:-------------------:|:---------------------:|:------:|:---------------:|
-|       # 1   |
-|       # 2   |
-|       # 3   |
+| Problem ID  | Number of variables | Number of constraints | Legacy | Modern | Speed-up|
+|:-----------:|:-------------------:|:---------------------:|:------:|:-------:|:--------:|
+|       HS118 | 15                  | 64                    | 25µs   | 28µs | 0.87x |
+|   LASER     | 1002                | 4004                  | 8.8s   | 2.1s | 4.1x |
+|   AUG3DCQP  | 3873                | 8746                  | 81s    | 35s | 2.3x |
 
 The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems from the Maros-Meszaros test suite [@maros-meszaros].
 This test suite contains 138 convex quadratic problems.
 Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to problems having fewer than 4000 optimization variables and 10 000 constraints.
-The platform considered is a something-something computer with something-something CPU.
+All computations have been run on a computer equipped with an 11th Gen Intel Core i7-11850H @ 2.50 GHz.
 Both the legacy and modernized solvers have been compiled with `gfortran 14.2.0` and the following options: `-03 -march=native -mtune=native`.
 The `blas`/`lapack` backend used is `openblas 0.3.29` installed using `conda`.
 To ensure a fair comparison, `openblas` was restricted to using a single thread.
 In addition, both solvers providing the option to use a pre-factorized matrix $\mathbf{P}$, we restrict the timings to the active set method only.
 In all cases, the modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3 for problems having roughly 50 optimization variables or more and near-identical performances for smaller problems.
 These improved performances result almost entirely from the use of `blas` and `lapack` for the different matrix-vector and matrix-matrix operations.
-A complete breakdown of these benchmarks can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
+<!-- A complete breakdown of these benchmarks can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository. -->
 
 # Limitations and perspectives
 
