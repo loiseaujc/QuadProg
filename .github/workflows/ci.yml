@@ -12,9 +12,9 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gfortran
-            flag-debug: "-Wno-external-argument-mismatch"
+            flag-debug: "-Wno-external-argument-mismatch -coverage"
             flag-release: "-Wno-external-argument-mismatch"
-            extra-packages: "openblas"
+            extra-packages: "openblas, lcov"
           - os: ubuntu-latest
             compiler: ifx
             flag-debug: ""
@@ -61,6 +61,21 @@ jobs:
         run: |
           fpm test --compiler ${{ matrix.compiler }} --flag "${{ matrix.flag-release }}" --verbose
 
+      - name: Create coverage report
+        if: contains( matrix.os, 'ubuntu') && contains( matrix.compiler, 'gfortran')
+        run: |
+          mkdir -p ${{ env.COV_DIR }}
+          mv ./build/gfortran_*/*/* ${{ env.COV_DIR }}
+          lcov --capture --initial --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.base
+          lcov --capture           --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.capture
+          lcov --add-tracefile ${{ env.COV_DIR }}/coverage.base --add-tracefile ${{ env.COV_DIR }}/coverage.capture --output-file ${{ env.COV_DIR }}/coverage.info
+        env:
+          COV_DIR: build/coverage
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          files: build/coverage/coverage.info
 
 
 
