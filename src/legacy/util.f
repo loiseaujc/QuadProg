@@ -139,7 +139,7 @@ c
 
       subroutine dpofa(a,lda,n,info)
       integer lda,n,info
-      double precision a(lda,1)
+      double precision a(lda,n)
 c
 c     dpofa factors a double precision symmetric positive definite
 c     matrix.
