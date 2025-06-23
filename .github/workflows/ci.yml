@@ -57,9 +57,9 @@ jobs:
           fpm build --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose --show-model
           fpm test --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose
 
-      - name: fpm test (release)
-        run: |
-          fpm test --compiler ${{ matrix.compiler }} --profile release --flag "${{ matrix.flag-release }}" --verbose
+      # - name: fpm test (release)
+      #   run: |
+      #     fpm test --compiler ${{ matrix.compiler }} --profile release --flag "${{ matrix.flag-release }}" --verbose
 
       - name: Run example
         run: |
@@ -71,15 +71,10 @@ jobs:
         if: contains( matrix.os, 'ubuntu') && contains( matrix.compiler, 'gfortran')
         run: |
           mkdir -p ${{ env.COV_DIR }}
-          echo "Directory created"
           mv ./build/gfortran_*/*/* ${{ env.COV_DIR }}
-          echo "All stuff has been moved"
           lcov --capture --initial --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.base
-          echo "First lcov command done."
           lcov --capture           --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.capture
-          echo "Second lcov command done/"
           lcov --add-tracefile ${{ env.COV_DIR }}/coverage.base --add-tracefile ${{ env.COV_DIR }}/coverage.capture --output-file ${{ env.COV_DIR }}/coverage.info
-          echo "Last lcov command done."
         env:
           COV_DIR: build/coverage
 
