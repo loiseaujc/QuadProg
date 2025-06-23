@@ -2,63 +2,64 @@ name: ci
 on: [push]
 
 jobs:
-  runs-on: ${{ matrix.os }}
-  strategy:
-    fail-fast: false
-    matrix:
-      os: [ubuntu-latest] #, macos-latest, windows-latest]
-      compiler: [gfortran, ifx] #, lfortran, flang-new]
-      include:
-        - os: ubuntu-latest
-          compiler: gfortran
-          flag-debug: ""
-          flag-release: ""
-          extra-packages: "openblas"
-        - os: ubuntu-latest
-          compiler: ifx
-          flag-debug: ""
-          flag-release: ""
-          extra-packages: "openblas"
-        # - os: ubuntu-latest
-        #   compiler: lfortran
-        #   flag-debug: ""
-        #   flag-release: ""
-        #   extra-packages: "openblas"
-        # - os: ubuntu-latest
-        #   compiler: flang-new
-        #   flag-debug: ""
-        #   flag-release: ""
-        #   extra-packages: "openblas"
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest] #, macos-latest, windows-latest]
+        compiler: [gfortran, ifx] #, lfortran, flang-new]
+        include:
+          - os: ubuntu-latest
+            compiler: gfortran
+            flag-debug: ""
+            flag-release: ""
+            extra-packages: "openblas"
+          - os: ubuntu-latest
+            compiler: ifx
+            flag-debug: ""
+            flag-release: ""
+            extra-packages: "openblas"
+          # - os: ubuntu-latest
+          #   compiler: lfortran
+          #   flag-debug: ""
+          #   flag-release: ""
+          #   extra-packages: "openblas"
+          # - os: ubuntu-latest
+          #   compiler: flang-new
+          #   flag-debug: ""
+          #   flag-release: ""
+          #   extra-packages: "openblas"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup MSVC (only on Windows)
-      if: runner.os == "Windows"
-      uses: ilammy/msvc-dev-cmd@v1
+      - name: Setup MSVC (only on Windows)
+        if: runner.os == "Windows"
+        uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Setup Conda
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        auto-update-conda: true
-        activate-environment: fortran
-        channels: conda-forge, defaults
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: fortran
+          channels: conda-forge, defaults
 
-    - name: Setup Fortran
-      uses: gha3mi/setup-fortran-conda@dev
-      with:
-        compiler: ${{ matrix.compiler }}
-        platform: ${{ matrix.os }}
-        extra-packages: ${{ matrix.extra-packages }}
+      - name: Setup Fortran
+        uses: gha3mi/setup-fortran-conda@dev
+        with:
+          compiler: ${{ matrix.compiler }}
+          platform: ${{ matrix.os }}
+          extra-packages: ${{ matrix.extra-packages }}
 
-    - name: fpm test (debug)
-      run: |
-        fpm build --compiler ${{ matrix.compiler }} --flag "${{ matrix.flag-debug }}" --verbose --show-model
-        fpm test --compiler ${{ matrix.compiler }} --flag "${{ matrix.flag-debug }}" --verbose
+      - name: fpm test (debug)
+        run: |
+          fpm build --compiler ${{ matrix.compiler }} --flag "${{ matrix.flag-debug }}" --verbose --show-model
+          fpm test --compiler ${{ matrix.compiler }} --flag "${{ matrix.flag-debug }}" --verbose
 
-    - name: fpm test (release)
-      run: |
-        fpm test --compiler ${{ matrix.compiler }} --flag "${{ matrix.flag-release }}" --verbose
+      - name: fpm test (release)
+        run: |
+          fpm test --compiler ${{ matrix.compiler }} --flag "${{ matrix.flag-release }}" --verbose
 
 
 
