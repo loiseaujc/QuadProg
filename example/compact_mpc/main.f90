@@ -68,7 +68,7 @@ contains
       if (present(D)) then
          plant%D = D
       else
-         allocate (plant%D(noutputs, ninputs)); plant%D = 0.0_dp
+         allocate (plant%D(noutputs, ninputs), source=0.0_dp)
       end if
       return
    end function
@@ -131,9 +131,9 @@ contains
       ncons = 2*ninputs*horizon; n = size(controller%P, 1)
 
       if (ncons /= 0) then
-         allocate (controller%C(1, ncons)); controller%C = 0.0_dp
-         allocate (controller%icmat(2, ncons)); controller%icmat = 0
-         allocate (controller%d(ncons)); controller%d = 0.0_dp
+         allocate (controller%C(1, ncons), source=0.0_dp)
+         allocate (controller%icmat(2, ncons), source=0)
+         allocate (controller%d(ncons), source=0.0_dp)
 
          controller%icmat(1, :) = 1
          do i = 1, n
@@ -203,7 +203,7 @@ contains
       integer, intent(in)  :: nblk
       real(dp), allocatable :: B(:, :)
       integer :: i, n
-      n = size(A, 1); allocate (B(n*nblk, n*nblk)); B = 0.0_dp
+      n = size(A, 1); allocate (B(n*nblk, n*nblk), source=0.0_dp)
       do concurrent(i=1:nblk)
          B((i - 1)*n + 1:i*n, (i - 1)*n + 1:i*n) = A
       end do
@@ -215,7 +215,7 @@ contains
       integer, intent(in) :: n
       real(dp), allocatable :: O(:, :)
       integer :: i, m
-      m = size(A, 1); allocate (O(m*n, m)); O = 0.0_dp
+      m = size(A, 1); allocate (O(m*n, m), source=0.0_dp)
 
       do concurrent(i=1:n)
          O((i - 1)*m + 1:i*m, :) = matrix_power(A, i)
@@ -230,7 +230,7 @@ contains
       integer :: nstate, ninput, i, j
 
       nstate = size(A, 1); ninput = size(B, 2)
-      allocate (T(nstate*n, ninput*n)); T = 0.0_dp
+      allocate (T(nstate*n, ninput*n), source=0.0_dp)
 
       do i = 1, n
          do j = 1, i

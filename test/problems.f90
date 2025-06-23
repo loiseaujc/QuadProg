@@ -62,7 +62,7 @@ contains
       allocate (G(1, 1), h(1)); G = 0.0_dp; h = 0.0_dp
       !> Solve the QP problem.
       info = 0 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, n, n, x, y, obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+      call legacy_qpgen2(P, q, n, n, x, y, obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
 
       !> Check QuadProg info message.
       call check(error, info == 0, &
@@ -137,7 +137,7 @@ contains
       !> Get the constraints matrix and vector.
       !> Solve the QP problem.
       info = 0 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, n, n, x, y, obj, C, d, n, ncons, neq, iact, nact, iter, work, info)
+      call legacy_qpgen2(P, q, n, n, x, y, obj, C, d, n, ncons, neq, iact, nact, iter, work, info)
 
       !> Check QuadProg info message.
       call check(error, info == 0, &
@@ -203,7 +203,7 @@ contains
       !> Get the constraints matrix and vector.
       !> Solve the QP problem.
       info = 0 ! P is already factorized when defining the QP.
-      call qpgen1(P, q, n, n, x, y, obj, C, iamat, d, 2, ncons, neq, iact, nact, iter, work, info)
+      call legacy_qpgen1(P, q, n, n, x, y, obj, C, iamat, d, 2, ncons, neq, iact, nact, iter, work, info)
 
       !> Check QuadProg info message.
       call check(error, info == 0, &
@@ -324,7 +324,7 @@ contains
       allocate (work(lwork)); work = 0.0_dp
       !> Solve the QP problem.
       info = 0 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, n, n, x, y, obj, A, b, n, ncons, neq, iact, nact, iter, work, info)
+      call legacy_qpgen2(P, q, n, n, x, y, obj, A, b, n, ncons, neq, iact, nact, iter, work, info)
 
       !> Check QuadProg info message.
       call check(error, info == 0, &
@@ -401,7 +401,7 @@ contains
       allocate (work(lwork)); work = 0.0_dp
       !> Solve the QP problem.
       info = 0 ! P is already factorized when defining the QP.
-      call qpgen1(P, q, n, n, x, y, obj, A, iamat, b, 5, ncons, neq, iact, nact, iter, work, info)
+      call legacy_qpgen1(P, q, n, n, x, y, obj, A, iamat, b, 5, ncons, neq, iact, nact, iter, work, info)
 
       !> Check QuadProg info message.
       call check(error, info == 0, &

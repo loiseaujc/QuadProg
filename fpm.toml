@@ -18,11 +18,10 @@ implicit-external = true
 source-form = "default"
 
 [build]
-auto-executables = true
-auto-examples = true
+auto-executables = false
+auto-examples = false
 auto-tests = true
-module-naming = false # ???
-link = ["blas", "lapack"]
+link = ["openblas"]
 
 [library]
 source-dir="src"
@@ -40,6 +39,14 @@ source-dir = "example/mpc"
 [[example]]
 name = "compact_mpc"
 source-dir = "example/compact_mpc"
+
+#----------------------------------------------------
+#-----     Markowitz Portoflio Optimization     -----
+#----------------------------------------------------
+
+[[example]]
+name = "markowitz"
+source-dir = "example/markowitz"
 
 # #------------------------------------------------------
 # #-----     Non-negative least-squares example     -----

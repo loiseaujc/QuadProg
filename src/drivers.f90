@@ -14,7 +14,7 @@
 !  along with this program; if not, write to the free software
 !  foundation, inc., 59 temple place - suite 330, boston, ma 02111-1307,
 !  usa.
-submodule(quadprog) quadprog_legacy
+submodule(quadprog) modernized_drivers
    use quadprog_constants, only: dp
 contains
 !  this routine uses the goldfarb/idnani algorithm to solve the
@@ -81,9 +81,9 @@ contains
 
    module procedure qpgen2
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
+   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
-   real(dp) :: dnrm2, ddot
+   real(dp) :: dnrm2, ddot, residuals(q)
 
    r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
    vsmall = epsilon(1.0_dp)                           ! Machine precision.
@@ -116,16 +116,11 @@ contains
    !>    - set low triangular part of dmat to zero,
    !>    - store dvec in sol,
    !>    - calculate value of the criterion at unconstrained minima.
-   crval = 0.0_dp
-   do j = 1, n
-      sol(j) = dvec(j)
-      crval = crval + work(j)*sol(j)
-      work(j) = 0.0_dp
-      do concurrent(i=j + 1:n)
-         dmat(i, j) = 0.0_dp
-      end do
+   do concurrent(i=1:n, j=1:n)
+      if (i > j) dmat(i, j) = 0.0_dp
    end do
-   crval = -crval/2.0_dp
+   call dcopy(n, dvec(1:n), 1, sol(1:n), 1)
+   crval = -0.5_dp*ddot(n, sol(1:n), 1, work(1:n), 1)
    ierr = 0
 
    !> Calculate some constants, i.e., from which index on the different
@@ -154,10 +149,12 @@ contains
       !> Verify all constraints.
       !>    - Check which are being violated.
       !>    - For equality ones, the normal vector may have to be negated, bvec also.
+      call dcopy(q, bvec, 1, residuals, 1)
+      call dgemv("t", n, q, 1.0_dp, amat, n, sol, 1, -1.0_dp, residuals, 1)
       l = iwsv
       do i = 1, q
          l = l + 1
-         sum = -bvec(i) + ddot(n, amat(1:n, i), 1, sol(1:n), 1)
+         sum = residuals(i)
          if (abs(sum) < vsmall) sum = 0.0_dp
          if (i > meq) then
             work(l) = sum
@@ -171,9 +168,7 @@ contains
       end do
 
       !> Active constraints are set explicitly to zero.
-      do i = 1, nact
-         work(iwsv + iact(i)) = 0.0_dp
-      end do
+      work(iwsv + iact(1:nact)) = 0.0_dp
 
       !> Select which violated constraint to consider.
       !>    - Each violation is weighted by the number of non-zero elements in
@@ -188,9 +183,7 @@ contains
          end if
       end do
       if (nvl == 0) then
-         do i = 1, nact
-            lagr(iact(i)) = work(iwuv + i)
-         end do
+         lagr(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
          return
       end if
 
@@ -205,24 +198,18 @@ contains
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
+            work(l1 + 1:l1 + n) = 0.0_dp
             call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
             t1inf = .true.
-            do i = nact, 1, -1
-               sum = work(i)
-               l = iwrm + (i*(i + 3))/2
-               l1 = l - i
-               do j = i + 1, nact
-                  sum = sum - work(l)*work(iwrv + j)
-                  l = l + j
-               end do
-               sum = sum/work(l1)
-               work(iwrv + i) = sum
+            call dcopy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
+            call dtpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), work(iwrv + 1:iwrv + nact), 1)
+            do i = 1, nact
                if (iact(i) <= meq) cycle
-               if (sum <= 0.0_dp) cycle
+               if (work(iwrv + i) <= 0.0_dp) cycle
                t1inf = .false.
                it1 = i
             end do
@@ -312,37 +299,16 @@ contains
                         !> Find the Givens rotation reducing the l1-th element of d to zero.
                         !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
-                        gc = max(abs(work(i - 1)), abs(work(i)))
-                        gs = min(abs(work(i - 1)), abs(work(i)))
-                        temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(i - 1))
-                        gc = work(i - 1)/temp
-                        gs = work(i)/temp
+                        call dlartg(work(i - 1), work(i), gc, gs, temp)
 
                         !> Givens rotation is done with the matrix [gc gs, gs -gc].
                         !>    -  If gc = 1, i-th element of d is zero compared with element
                         !>       (l1-1). Hence, do nothing.
-                        !>    -  If gc = 0, switch column i and column i-1 of J. Since we only
-                        !>       switch columns in J, need to be careful how d is updated
-                        !>       depending on the sign of gs.
                         !>    -  Else, Givens rotation is applied to the columns. The i-1
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
-                        if (gc == 0.0_dp) then
-                           work(i - 1) = gs*temp
-                           do j = 1, n
-                              temp = dmat(j, i - 1)
-                              dmat(j, i - 1) = dmat(j, i)
-                              dmat(j, i) = temp
-                           end do
-                        else
-                           work(i - 1) = temp
-                           nu = gs/(1.0_dp + gc)
-                           do j = 1, n
-                              temp = gc*dmat(j, i - 1) + gs*dmat(j, i)
-                              dmat(j, i) = nu*(dmat(j, i - 1) + temp) - dmat(j, i)
-                              dmat(j, i - 1) = temp
-                           end do
-                        end if
+                        work(i - 1) = temp
+                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, i - 1), n, temp, temp)
                      end do
 
                      !> l is still pointing to element (nact,nact) of the matrix r.
@@ -356,6 +322,7 @@ contains
                   !> Since fit changed, we need to recalculate by "how much" the chosen
                   !> constraint is now violated.
                   sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
+                  ! sum = residuals(i)
                   if (nvl > meq) then
                      work(iwsv + nvl) = sum
                   else
@@ -363,6 +330,7 @@ contains
                      if (sum > 0.0_dp) then
                         call dscal(n, -1.0_dp, amat(1:n, nvl), 1)
                         bvec(nvl) = -bvec(nvl)
+                        ! residuals(nvl) = -residuals(nvl)
                      end if
                   end if
                   exit block700
@@ -534,7 +502,7 @@ contains
 
    module procedure qpgen1
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall, tmpa, tmpb
+   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
    real(dp) :: dnrm2, ddot
 
@@ -569,16 +537,11 @@ contains
    !>    - set lower triangular part of dmat to zero,
    !>    - store dvec in sol,
    !>    - calculate value of the criterion at unconstrained minima
-   crval = 0.0_dp
-   do j = 1, n
-      sol(j) = dvec(j)
-      crval = crval + work(j)*sol(j)
-      work(j) = 0.0_dp
-      do i = j + 1, n
-         dmat(i, j) = 0.0_dp
-      end do
+   do concurrent(i=1:n, j=1:n)
+      if (i > j) dmat(i, j) = 0.0_dp
    end do
-   crval = -crval/2.d0
+   call dcopy(n, dvec(1:n), 1, sol(1:n), 1)
+   crval = -0.5_dp*ddot(n, sol(1:n), 1, work(1:n), 1)
    ierr = 0
 
    !> Calculate some constants, i.e., from which index on the different
@@ -646,9 +609,7 @@ contains
          end if
       end do
       if (nvl == 0) then
-         do i = 1, nact
-            lagr(iact(i)) = work(iwuv + i)
-         end do
+         lagr(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
          return
       end if
 
@@ -669,6 +630,7 @@ contains
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
+            work(l1 + 1:l1 + n) = 0.0_dp
             call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
@@ -779,38 +741,18 @@ contains
                         !> Find the Givens rotation reducing the l1-th element of d to zero.
                         !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
-                        gc = max(abs(work(i - 1)), abs(work(i)))
-                        gs = min(abs(work(i - 1)), abs(work(i)))
-                        temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(i - 1))
-                        gc = work(i - 1)/temp
-                        gs = work(i)/temp
+                        call dlartg(work(i - 1), work(i), gc, gs, temp)
 
                         !> Givens rotation is done with the matrix [gc gs, gs -gc].
                         !>    -  If gc = 1, i-th element of d is zero compared with element
                         !>       (l1-1). Hence, do nothing.
-                        !>    -  If gc = 0, switch column i and column i-1 of J. Since we only
-                        !>       switch columns in J, need to be careful how d is updated
-                        !>       depending on the sign of gs.
                         !>    -  Else, Givens rotation is applied to the columns. The i-1
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
-                        if (gc == 0.0_dp) then
-                           work(i - 1) = gs*temp
-                           do j = 1, n
-                              temp = dmat(j, i - 1)
-                              dmat(j, i - 1) = dmat(j, i)
-                              dmat(j, i) = temp
-                           end do
-                        else
-                           work(i - 1) = temp
-                           nu = gs/(1.0_dp + gc)
-                           do j = 1, n
-                              temp = gc*dmat(j, i - 1) + gs*dmat(j, i)
-                              dmat(j, i) = nu*(dmat(j, i - 1) + temp) - dmat(j, i)
-                              dmat(j, i - 1) = temp
-                           end do
-                        end if
+                        work(i - 1) = temp
+                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, i - 1), n, temp, temp)
                      end do
+
                      !> l is still pointing to element (nact,nact) of the matrix r.
                      !> Store d(nact) in r(nact,nact)
                      work(l) = work(nact)

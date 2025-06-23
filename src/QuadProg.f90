@@ -64,9 +64,9 @@ module QuadProg
       module procedure solve_compact_qp
    end interface
 
-   !--------------------------------------------------------------
-   !-----     INTERFACES FOR THE QUADPROG LEGACY DRIVERS     -----
-   !--------------------------------------------------------------
+   !------------------------------------------------------------------
+   !-----     INTERFACES FOR THE QUADPROG MODERNIZED DRIVERS     -----
+   !------------------------------------------------------------------
 
    interface
       module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, fdamat, q, &
@@ -217,7 +217,7 @@ contains
       associate (n => size(prob%P, 1), neq => prob%neq, ncons => prob%ncons)
          is_constrained = allocated(prob%A) .or. allocated(prob%C)
          if (is_constrained) then
-            allocate (G(n, ncons), h(ncons)); G = 0.0_dp; h = 0.0_dp
+            allocate (G(n, ncons), h(ncons), source=0.0_dp)
             !> Linear equality constraints.
             if (allocated(prob%A)) then
                do i = 1, neq
@@ -227,19 +227,21 @@ contains
             !> Linear inequality constraints.
             if (allocated(prob%C)) then
                do i = neq + 1, ncons
-                  G(:, i) = prob%C(i, :); h(i) = prob%d(i)
+                  G(:, i) = prob%C(i - neq, :); h(i) = prob%d(i - neq)
                end do
             end if
          else
-            allocate (G(1, 1), h(1)); G = 0.0_dp; h = 0.0_dp
+            allocate (G(1, 1), h(1), source=0.0_dp)
          end if
       end associate
 
       return
    end subroutine
 
-   type(OptimizeResult) function solve_standard_qp(problem) result(result)
+   type(OptimizeResult) function solve_standard_qp(problem, legacy) result(result)
       type(qp_problem), intent(in) :: problem
+      logical, optional, intent(in) :: legacy
+      logical :: legacy_
       real(dp), allocatable :: P(:, :), q(:)
       real(dp), allocatable :: G(:, :), h(:)
       real(dp), allocatable :: work(:)
@@ -247,19 +249,24 @@ contains
       integer, allocatable  :: iact(:)
 
       n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
+      legacy_ = .false.; if (present(legacy)) legacy_ = legacy
       !> Allocate data.
       allocate (iact(ncons))
       allocate (P, source=problem%P); allocate (q, source=problem%q)
-      allocate (result%x, source=q); result%x = 0.0_dp
-      allocate (result%y(ncons)); result%y = 0.0_dp
+      allocate (result%x, mold=q); result%x = 0.0_dp
+      allocate (result%y(ncons), source=0.0_dp)
       !> Allocate workspace
       r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-      allocate (work(lwork)); work = 0.0_dp
+      allocate (work(lwork), source=0.0_dp)
       !> Get the constraints matrix and vector.
       call get_constraints_matrix(problem, G, h)
       !> Solve the QP problem.
       info = 1 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+      if (legacy_) then
+         call legacy_qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+      else
+         call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+      end if
       !> Success?
       result%success = (info == 0)
       return
@@ -328,7 +335,7 @@ contains
 
       ! Internal variables.
       logical :: is_constrained
-      integer :: i, ma, na, mc, nc
+      integer :: ma, na, mc, nc
 
       associate (n => size(prob%P, 1), neq => prob%neq, ncons => prob%ncons)
          is_constrained = allocated(prob%A) .or. allocated(prob%C)
@@ -360,8 +367,8 @@ contains
                end if
             end if
          else
-            allocate (G(1, n), h(1)); G = 0.0_dp; h = 0.0_dp
-            allocate (igmat(2, n)); igmat = 0
+            allocate (G(1, n), h(1), source=0.0_dp)
+            allocate (igmat(2, n), source=0)
          end if
       end associate
 
@@ -382,12 +389,12 @@ contains
       !> Allocate data.
       allocate (iact(ncons))
       allocate (P, source=problem%P); allocate (q, source=problem%q)
-      allocate (result%x, source=q); result%x = 0.0_dp
-      allocate (result%y(ncons)); result%y = 0.0_dp
+      allocate (result%x, mold=q); result%x = 0.0_dp
+      allocate (result%y(ncons), source=0.0_dp)
 
       !> Allocate workspace
       r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-      allocate (work(lwork)); work = 0.0_dp
+      allocate (work(lwork), source=0.0_dp)
 
       !> Get the constraints matrix and vector.
       call get_compact_constraints_matrix(problem, G, igmat, h)
