@@ -34,9 +34,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup MSVC (only on Windows)
-        if: runner.os == "Windows"
-        uses: ilammy/msvc-dev-cmd@v1
+      # - name: Setup MSVC (only on Windows)
+      #   if: runner.os == "Windows"
+      #   uses: ilammy/msvc-dev-cmd@v1
 
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v3
