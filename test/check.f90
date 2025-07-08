@@ -7,6 +7,7 @@ program check
    use QuadProg
    ! Collection of test problems.
    use TestProblems
+   use TestBenchmarkProblems
    use TestLstsqVariants
    implicit none
 
@@ -19,6 +20,7 @@ program check
    status = 0
    testsuites = [ &
                 new_testsuite("Simple problems", collect_test_problems), &
+                new_testsuite("Benchmark problems", collect_test_benchmark_problems), &
                 new_testsuite("Least-squares variants", collect_lstsq_problems) &
                 ]
 
