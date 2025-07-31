@@ -357,11 +357,7 @@ contains
                l = iwrm + (it1*(it1 + 1))/2 + 1
                l1 = l + it1
                if (work(l1) /= 0.0_dp) then ! first go to 798
-                  gc = max(abs(work(l1 - 1)), abs(work(l1)))
-                  gs = min(abs(work(l1 - 1)), abs(work(l1)))
-                  temp = sign(gc*sqrt(1 + (gs/gc)*(gs/gc)), work(l1 - 1))
-                  gc = work(l1 - 1)/temp
-                  gs = work(l1)/temp
+                  call dlartg(work(l1 - 1), work(l1), gc, gs, temp)
 
                   !> Givens rotation is done with the matrix [gc gc ; gs -gc].
                   !> If gc = 0:
@@ -378,24 +374,15 @@ contains
                            work(l1) = temp
                            l1 = l1 + i
                         end do
-                        do i = 1, n
-                           temp = dmat(i, it1)
-                           dmat(i, it1) = dmat(i, it1 + 1)
-                           dmat(i, it1 + 1) = temp
-                        end do
+                        call dswap(n, dmat(:, it1), 1, dmat(:, it1 + 1), 1)
                      else
-                        nu = gs/(1.0_dp + gc)
                         do i = it1 + 1, nact
                            temp = gc*work(l1 - 1) + gs*work(l1)
-                           work(l1) = nu*(work(l1 - 1) + temp) - work(l1)
+                           work(l1) = gc*work(l1) - gs*work(l1 - 1)
                            work(l1 - 1) = temp
                            l1 = l1 + i
                         end do
-                        do i = 1, n
-                           temp = gc*dmat(i, it1) + gs*dmat(i, it1 + 1)
-                           dmat(i, it1 + 1) = nu*(dmat(i, it1) + temp) - dmat(i, it1 + 1)
-                           dmat(i, it1) = temp
-                        end do
+                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, it1), n, temp, temp)
                      end if
                      ! shift column (it1+1) of r to column (it1) (that is, the first it1
                      ! elements). the posit1on of element (1,it1+1) of r was calculated above
@@ -403,12 +390,7 @@ contains
                   end if
                end if
 
-               l1 = l - it1
-               do i = 1, it1
-                  work(l1) = work(l)
-                  l = l + 1
-                  l1 = l1 + 1
-               end do
+               l1 = l - it1; call dcopy(it1, work(l), 1, work(l1), 1)
 
                !> Update vector u and iact as necessary and continue
                !> with updating the matrices J and R.
