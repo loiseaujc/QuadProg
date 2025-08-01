@@ -308,7 +308,7 @@ contains
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
                         work(i - 1) = temp
-                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, i - 1), n, temp, temp)
+                        call drot(n, dmat(1, i - 1), 1, dmat(1, i), 1, gc, gs)
                      end do
 
                      !> l is still pointing to element (nact,nact) of the matrix r.
@@ -382,7 +382,7 @@ contains
                            work(l1 - 1) = temp
                            l1 = l1 + i
                         end do
-                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, it1), n, temp, temp)
+                        call drot(n, dmat(1, it1), 1, dmat(1, it1 + 1), 1, gc, gs)
                      end if
                      ! shift column (it1+1) of r to column (it1) (that is, the first it1
                      ! elements). the posit1on of element (1,it1+1) of r was calculated above
@@ -732,7 +732,7 @@ contains
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
                         work(i - 1) = temp
-                        call dlarot(.false., .false., .false., n, gc, gs, dmat(1, i - 1), n, temp, temp)
+                        call drot(n, dmat(1, i - 1), 1, dmat(1, i), 1, gc, gs)
                      end do
 
                      !> l is still pointing to element (nact,nact) of the matrix r.
