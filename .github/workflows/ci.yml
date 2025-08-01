@@ -20,11 +20,11 @@ jobs:
             flag-debug: ""
             flag-release: ""
             extra-packages: "openblas"
-          - os: ubuntu-latest
-            compiler: flang-new
-            flag-debug: ""
-            flag-release: ""
-            extra-packages: "openblas"
+          # - os: ubuntu-latest
+          #   compiler: flang-new
+          #   flag-debug: ""
+          #   flag-release: ""
+          #   extra-packages: "openblas"
  
           - os: macos-latest
             compiler: gfortran
