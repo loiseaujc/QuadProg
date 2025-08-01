@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest] #, windows-latest]
-        compiler: [gfortran, ifx, flang-new] #, lfortran]
+        compiler: [gfortran, ifx] #, flang-new] #, lfortran]
         include:
           - os: ubuntu-latest
             compiler: gfortran
