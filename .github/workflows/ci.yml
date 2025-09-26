@@ -32,7 +32,7 @@ jobs:
           channels: conda-forge, defaults
 
       - name: Setup Fortran
-        uses: gha3mi/setup-fortran-conda@dev
+        uses: gha3mi/setup-fortran-conda@latest
         with:
           compiler: ${{ matrix.compiler }}
           compiler-version: ${{ matrix.compiler-version }}
