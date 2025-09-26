@@ -34,7 +34,12 @@ module QuadProg
       integer               :: neq, ncons
    end type qp_problem
    interface qp_problem
-      module procedure initialize_qp_problem
+      module type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
+         implicit none
+         real(dp), intent(in)           :: P(:, :), q(:)
+         real(dp), optional, intent(in) :: A(:, :), b(:)
+         real(dp), optional, intent(in) :: C(:, :), d(:)
+      end function initialize_qp_problem
    end interface
 
    type, public :: compact_qp_problem
@@ -52,7 +57,15 @@ module QuadProg
       integer               :: neq, ncons
    end type compact_qp_problem
    interface compact_qp_problem
-      module procedure initialize_compact_qp_problem
+      module type(compact_qp_problem) function initialize_compact_qp_problem(P, q, A, iamat, b, &
+                                                                             C, icmat, d) result(prob)
+         implicit none
+         real(dp), intent(in)           :: P(:, :), q(:)
+         real(dp), optional, intent(in) :: A(:, :), b(:)
+         integer, optional, intent(in)  :: iamat(:, :)
+         real(dp), optional, intent(in) :: C(:, :), d(:)
+         integer, optional, intent(in)  :: icmat(:, :)
+      end function initialize_compact_qp_problem
    end interface
 
    !---------------------------------------------------
@@ -60,8 +73,15 @@ module QuadProg
    !---------------------------------------------------
 
    interface solve
-      module procedure solve_standard_qp
-      module procedure solve_compact_qp
+      module type(OptimizeResult) function solve_standard_qp(problem, legacy) result(result)
+         implicit none
+         type(qp_problem), intent(in) :: problem
+         logical, optional, intent(in) :: legacy
+      end function solve_standard_qp
+      module type(OptimizeResult) function solve_compact_qp(problem) result(result)
+         implicit none
+         type(compact_qp_problem), intent(in) :: problem
+      end function solve_compact_qp
    end interface
 
    !------------------------------------------------------------------
@@ -208,7 +228,7 @@ contains
       return
    end function initialize_qp_problem
 
-   module subroutine get_constraints_matrix(prob, G, h)
+   subroutine get_constraints_matrix(prob, G, h)
       implicit none
       type(qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
@@ -336,7 +356,7 @@ contains
       end if
    end function initialize_compact_qp_problem
 
-   module subroutine get_compact_constraints_matrix(prob, G, igmat, h)
+   subroutine get_compact_constraints_matrix(prob, G, igmat, h)
       implicit none
       type(compact_qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
