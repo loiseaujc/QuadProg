@@ -31,7 +31,6 @@ program check
       write (*, *) "-------------------------------"
       write (*, *)
       call run_testsuite(testsuites(i)%collect, error_unit, status)
-      print *, i, status
    end do
 
    if (status > 0) then

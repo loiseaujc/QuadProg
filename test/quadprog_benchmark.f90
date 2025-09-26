@@ -4,34 +4,28 @@ module quadprog_benchmark
    implicit none
    private
 
-   character(len=32), dimension(19), parameter, public :: problems = [character(len=32) :: &
-                                                                      "test/data/HS21", &
-                                                                      "test/data/QPTEST", &
-                                                                      "test/data/HS35MOD", &
-                                                                      "test/data/HS35", &
-                                                                      "test/data/HS76", &
-                                                                      "test/data/HS268", &
-                                                                      "test/data/S268", &
-                                                                      "test/data/DUALC5", &
-                                                                      "test/data/DUALC1", &
-                                                                      "test/data/HS118", &
-                                                                      "test/data/KSIP", &
-                                                                      "test/data/DUAL4", &
-                                                                      "test/data/QPCBLEND", &
-                                                                      "test/data/DUAL1", &
-                                                                      "test/data/DUAL2", &
-                                                                      "test/data/DUAL3", &
-                                                                      "test/data/QPCSTAIR", &
-                                                                      "test/data/MOSARQP2", &
-                                                                      "test/data/LASER" &
-                                                                      ! "test/data/YAO", &
-                                                                      ! "test/data/MOSARQP1", &
-                                                                      ! "test/data/CONT-050", &
-                                                                      ! "test/data/AUG3DC", &
-                                                                      ! "test/data/AUG3DCQP" &
-                                                                      ]
+   character(len=255), dimension(19), parameter, public :: problems = [character(len=255) :: &
+                                                                       "test/data/HS21", &
+                                                                       "test/data/QPTEST", &
+                                                                       "test/data/HS35MOD", &
+                                                                       "test/data/HS35", &
+                                                                       "test/data/HS76", &
+                                                                       "test/data/HS268", &
+                                                                       "test/data/S268", &
+                                                                       "test/data/DUALC5", &
+                                                                       "test/data/DUALC1", &
+                                                                       "test/data/HS118", &
+                                                                       "test/data/KSIP", &
+                                                                       "test/data/DUAL4", &
+                                                                       "test/data/QPCBLEND", &
+                                                                       "test/data/DUAL1", &
+                                                                       "test/data/DUAL2", &
+                                                                       "test/data/DUAL3", &
+                                                                       "test/data/QPCSTAIR", &
+                                                                       "test/data/MOSARQP2", &
+                                                                       "test/data/LASER" &
+                                                                       ]
 
-   public :: say_hello
    public :: get_problem_data, problem_description
 contains
 
@@ -82,8 +76,4 @@ contains
 
       return
    end function
-
-   subroutine say_hello
-      print *, "Hello, quadprog_benchmark!"
-   end subroutine say_hello
 end module quadprog_benchmark
