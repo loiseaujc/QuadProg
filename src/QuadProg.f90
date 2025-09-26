@@ -21,7 +21,7 @@ module QuadProg
       !! Objective function evaluated at the minimizer.
       logical               :: success
       !! Whether the problem has been successfully solved or not.
-   end type
+   end type OptimizeResult
 
    type, public :: qp_problem
       real(dp), allocatable :: P(:, :), q(:)
@@ -32,7 +32,7 @@ module QuadProg
       real(dp), allocatable :: C(:, :), d(:)
       !! Matrix and vector defining the inequality constraints C @ x >= d.
       integer               :: neq, ncons
-   end type
+   end type qp_problem
    interface qp_problem
       module procedure initialize_qp_problem
    end interface
@@ -50,7 +50,7 @@ module QuadProg
       !! Matrix and vector defining the inequality constraints C @ x >= d using
       !! its compact representation.
       integer               :: neq, ncons
-   end type
+   end type compact_qp_problem
    interface compact_qp_problem
       module procedure initialize_compact_qp_problem
    end interface
@@ -69,8 +69,9 @@ module QuadProg
    !------------------------------------------------------------------
 
    interface
-      module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, fdamat, q, &
-                               meq, iact, nact, iter, work, ierr)
+      module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, &
+                               fdamat, q, meq, iact, nact, iter, work, ierr)
+         implicit none
          integer, intent(in)     :: fddmat, n
          !! Dimensions of the symmetric positive definit matrix Dmat.
          integer, intent(in)     :: fdamat, q
@@ -94,10 +95,11 @@ module QuadProg
          !! Workspace.
          real(dp), intent(out)   :: crval
          !! Cost function at the optimum.
-      end subroutine
+      end subroutine qpgen1
 
       module subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat, bvec, fdamat, q, &
                                meq, iact, nact, iter, work, ierr)
+         implicit none
          integer, intent(in)     :: fddmat, n
          !! Dimensions of the symmetric positive definite matrix Dmat.
          integer, intent(in)     :: fdamat, q
@@ -120,7 +122,7 @@ module QuadProg
          !! Workspace.
          real(dp), intent(out)   :: crval
          !! Cost function at the optimum.
-      end subroutine
+      end subroutine qpgen2
    end interface
 
    !------------------------------------------------------------------------
@@ -129,18 +131,20 @@ module QuadProg
 
    interface
       module function nnls(A, b) result(x)
+         implicit none
          real(dp), intent(in)           :: A(:, :)
          real(dp), intent(in)           :: b(:)
          real(dp), allocatable          :: x(:)
-      end function
+      end function nnls
 
       module function bvls(A, b, ub, lb) result(x)
+         implicit none
          real(dp), intent(in)           :: A(:, :)
          real(dp), intent(in)           :: b(:)
          real(dp), optional, intent(in) :: ub(:)
          real(dp), optional, intent(in) :: lb(:)
          real(dp), allocatable          :: x(:)
-      end function
+      end function bvls
    end interface
 
    !---------------------------------------------------------------
@@ -149,9 +153,10 @@ module QuadProg
 
    interface
       module subroutine qr(A, Q, R)
+         implicit none
          real(dp), intent(in) :: A(:, :)
          real(dp), allocatable, intent(out) :: Q(:, :), R(:, :)
-      end subroutine
+      end subroutine qr
    end interface
 
 contains
@@ -163,6 +168,7 @@ contains
    !---------------------------------------
 
    type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
+      implicit none
       real(dp), intent(in)           :: P(:, :), q(:)
       real(dp), optional, intent(in) :: A(:, :), b(:)
       real(dp), optional, intent(in) :: C(:, :), d(:)
@@ -200,9 +206,10 @@ contains
       end if
 
       return
-   end function
+   end function initialize_qp_problem
 
    subroutine get_constraints_matrix(prob, G, h)
+      implicit none
       type(qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
       real(dp), allocatable, intent(out) :: G(:, :)
@@ -236,9 +243,10 @@ contains
       end associate
 
       return
-   end subroutine
+   end subroutine get_constraints_matrix
 
    type(OptimizeResult) function solve_standard_qp(problem, legacy) result(result)
+      implicit none
       type(qp_problem), intent(in) :: problem
       logical, optional, intent(in) :: legacy
       logical :: legacy_
@@ -263,14 +271,16 @@ contains
       !> Solve the QP problem.
       info = 1 ! P is already factorized when defining the QP.
       if (legacy_) then
-         call legacy_qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+         call legacy_qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, &
+                            ncons, neq, iact, nact, iter, work, info)
       else
-         call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, ncons, neq, iact, nact, iter, work, info)
+         call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, &
+                     ncons, neq, iact, nact, iter, work, info)
       end if
       !> Success?
       result%success = (info == 0)
       return
-   end function
+   end function solve_standard_qp
 
    !--------------------------------------
    !-----                            -----
@@ -278,7 +288,9 @@ contains
    !-----                            -----
    !--------------------------------------
 
-   type(compact_qp_problem) function initialize_compact_qp_problem(P, q, A, iamat, b, C, icmat, d) result(prob)
+   type(compact_qp_problem) function initialize_compact_qp_problem(P, q, A, iamat, b, &
+                                                                   C, icmat, d) result(prob)
+      implicit none
       real(dp), intent(in)           :: P(:, :), q(:)
       real(dp), optional, intent(in) :: A(:, :), b(:)
       integer, optional, intent(in)  :: iamat(:, :)
@@ -322,9 +334,10 @@ contains
          if (size(icmat, 2) /= size(C, 2)) error stop "Matrix C and index icmat have incompatible dimensions."
          prob%C = C; prob%icmat = icmat; prob%d = d; prob%ncons = prob%neq + size(d)
       end if
-   end function
+   end function initialize_compact_qp_problem
 
    subroutine get_compact_constraints_matrix(prob, G, igmat, h)
+      implicit none
       type(compact_qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
       real(dp), allocatable, intent(out)   :: G(:, :)
@@ -373,9 +386,10 @@ contains
       end associate
 
       return
-   end subroutine
+   end subroutine get_compact_constraints_matrix
 
    type(OptimizeResult) function solve_compact_qp(problem) result(result)
+      implicit none
       type(compact_qp_problem), intent(in) :: problem
       real(dp), allocatable :: P(:, :), q(:)
       real(dp), allocatable :: G(:, :), h(:)
@@ -401,10 +415,11 @@ contains
 
       !> Solve the QP problem.
       info = 1 ! P is already factorized when defining the QP.
-      call qpgen1(P, q, n, n, result%x, result%y, result%obj, G, igmat, h, size(G, 1), ncons, neq, iact, nact, iter, work, info)
+      call qpgen1(P, q, n, n, result%x, result%y, result%obj, G, igmat, h, size(G, 1), &
+                  ncons, neq, iact, nact, iter, work, info)
       !> Success?
       result%success = (info == 0)
       return
-   end function
+   end function solve_compact_qp
 
 end module QuadProg

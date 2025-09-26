@@ -16,6 +16,7 @@
 !  usa.
 submodule(quadprog) modernized_drivers
    use quadprog_constants, only: dp
+   implicit none
 contains
 !  this routine uses the goldfarb/idnani algorithm to solve the
 !  following minimization problem:
@@ -194,19 +195,22 @@ contains
       loop55: do
          block700: block
 
-            call dgemv("t", n, n, 1.0_dp, dmat(1:n, 1:n), n, amat(1:n, nvl), 1, 0.0_dp, work(1:n), 1)
+            call dgemv("t", n, n, 1.0_dp, dmat(1:n, 1:n), n, amat(1:n, nvl), 1, &
+                       0.0_dp, work(1:n), 1)
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
             work(l1 + 1:l1 + n) = 0.0_dp
-            call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
+            call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, &
+                       work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
             t1inf = .true.
             call dcopy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
-            call dtpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), work(iwrv + 1:iwrv + nact), 1)
+            call dtpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), &
+                       work(iwrv + 1:iwrv + nact), 1)
             do i = 1, nact
                if (iact(i) <= meq) cycle
                if (work(iwrv + i) <= 0.0_dp) cycle
@@ -243,7 +247,8 @@ contains
                   !> Take partial step in dual space.
                   !>    -  Drop the it1-th active constraint.
                   !>    -  Continue at step 2(a) (marked by label 55).
-                  call daxpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
+                  call daxpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, &
+                             work(iwuv + 1:iwuv + nact), 1)
                   work(iwuv + nact + 1) = work(iwuv + nact + 1) + t1
                   exit block700
                end if
@@ -264,7 +269,8 @@ contains
                !> Take step in primal and dual space.
                call daxpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
                crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
-               call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
+               call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
+                          work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
 
                !> If a full step has been taken:
@@ -409,7 +415,7 @@ contains
       end do loop55
    end do loop50
    return
-   end procedure
+   end procedure qpgen2
 
 !  this routine uses the goldfarb/idnani algorithm to solve the
 !  following minimization problem:
@@ -613,7 +619,8 @@ contains
             !> Compute z = J_2 @ d_2
             l1 = iwzv
             work(l1 + 1:l1 + n) = 0.0_dp
-            call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
+            call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, &
+                       work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
@@ -664,7 +671,8 @@ contains
                   !> Take partial step in dual space.
                   !>    -  Drop the it1-th active constraint.
                   !>    -  Continue at step 2(a) (marked by label 55).
-                  call daxpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
+                  call daxpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, &
+                             work(iwuv + 1:iwuv + nact), 1)
                   work(iwuv + nact + 1) = work(iwuv + nact + 1) + t1
                   exit block700
                end if
@@ -688,7 +696,8 @@ contains
                !> Take step in primal and dual space.
                call daxpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
                crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
-               call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
+               call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
+                          work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
 
                !> If a full step has been taken:
@@ -856,4 +865,4 @@ contains
    return
    end procedure qpgen1
 
-end submodule
+end submodule modernized_drivers

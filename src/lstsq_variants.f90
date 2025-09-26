@@ -49,9 +49,10 @@ contains
       allocate (work(lwork), source=0.0_dp)
       ! Solve QP.
       info = 1; qvec = matmul(transpose(A), b)
-      call qpgen1(R, qvec, n, n, x, y, obj, C, icmat, d, 1, ncons, neq, iact, nact, iter, work, info)
+      call qpgen1(R, qvec, n, n, x, y, obj, C, icmat, d, 1, ncons, &
+                  neq, iact, nact, iter, work, info)
    end block
-   end procedure
+   end procedure nnls
 
    !---------------------------------------------------
    !-----     Bounded-Variables Least-Squares     -----
@@ -138,8 +139,9 @@ contains
       allocate (work(lwork), source=0.0_dp)
       ! Solve QP.
       info = 1; qvec = matmul(transpose(A), b)
-      call qpgen1(R, qvec, n, n, x, y, obj, C, icmat, d, 1, ncons, neq, iact, nact, iter, work, info)
+      call qpgen1(R, qvec, n, n, x, y, obj, C, icmat, d, 1, ncons, &
+                  neq, iact, nact, iter, work, info)
    end block
 
-   end procedure
-end submodule
+   end procedure bvls
+end submodule lstsq_variants

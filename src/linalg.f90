@@ -1,5 +1,6 @@
 submodule(quadprog) linalg
    use quadprog_constants, only: dp
+   implicit none
 contains
 
    module procedure qr
@@ -32,6 +33,6 @@ contains
    !> Extract Q matrix.
    lwork = work(1); deallocate (work); allocate (work(lwork))
    call dorgqr(m, n, n, Q, m, tau, work, lwork, info)
-   end procedure
+   end procedure qr
 
-end submodule
+end submodule linalg
