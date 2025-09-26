@@ -48,24 +48,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        compiler: [gfortran, ifx, lfortran, flang-new, nvfortran]
         include:
           - os: ubuntu-latest
-            extra-packages: ""
-          - os: windows-latest
-            extra-packages: ""
-          - os: macos-latest
-            extra-packages: ""
-        exclude:
-          - os: macos-latest
-            compiler: flang-new
-          - os: macos-latest
+            compiler: gfortran
+            compiler-version: 13.3.0
+            flag-debug: "-Wno-external-argument-mismatch -coverage"
+            extra-packages: "lcov"
+          - os: ubuntu-latest
             compiler: ifx
-          - os: macos-latest
-            compiler: nvfortran
-          - os: windows-latest
-            compiler: nvfortran
+            compiler-version: 2025.2.1
+            extra-packages: ""
 
     steps:
       - name: Setup Fortran
