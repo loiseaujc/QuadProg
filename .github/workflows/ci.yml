@@ -12,8 +12,8 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gfortran
-            compiler-version: 13.3.0
-            flag-debug: "-Wno-external-argument-mismatch -coverage"
+            compiler-version: 14.1.0
+            flag-debug: "-coverage"
             extra-packages: "lcov, openblas"
           - os: ubuntu-latest
             compiler: ifx
@@ -41,7 +41,7 @@ jobs:
 
       - name: fpm test (debug)
         run: |
-          fpm build --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose --show-model
+          fpm build --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose
           fpm test --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose
 
       - name: Run example
