@@ -12,35 +12,17 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gfortran
+            compiler-version: 13.3.0
             flag-debug: "-Wno-external-argument-mismatch -coverage"
-            flag-release: "-Wno-external-argument-mismatch"
-            extra-packages: "openblas, lcov"
-
+            extra-packages: "lcov, openblas"
           - os: ubuntu-latest
             compiler: ifx
-            flag-debug: ""
-            flag-release: ""
+            compiler-version: 2025.2.1
             extra-packages: "openblas"
-
-          - os: macos-latest
-            compiler: gfortran
-            flag-debug: "-Wno-external-argument-mismatch"
-            flag-release: "-Wno-external-argument-mismatch"
-            extra-packages: "openblas, lcov"
-
-        exclude:
-          - os: macos-latest
-            compiler: flang-new
-          - os: macos-latest
-            compiler: ifx
            
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # - name: Setup MSVC (only on Windows)
-      #   if: runner.os == "Windows"
-      #   uses: ilammy/msvc-dev-cmd@v1
 
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v3
@@ -53,6 +35,7 @@ jobs:
         uses: gha3mi/setup-fortran-conda@dev
         with:
           compiler: ${{ matrix.compiler }}
+          compiler-version: ${{ matrix.compiler-version }}
           platform: ${{ matrix.os }}
           extra-packages: ${{ matrix.extra-packages }}
 
