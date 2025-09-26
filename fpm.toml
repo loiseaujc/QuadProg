@@ -21,12 +21,10 @@ source-form = "default"
 auto-executables = false
 auto-examples = false
 auto-tests = true
+link = ["lapack", "blas"]
 
 [library]
 source-dir="src"
-
-[dependencies]
-blas = "*"
 
 [dev-dependencies]
 test-drive.git = "https://github.com/nekStab/test-drive.git"
