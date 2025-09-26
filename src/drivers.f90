@@ -117,8 +117,8 @@ contains
    !>    - set low triangular part of dmat to zero,
    !>    - store dvec in sol,
    !>    - calculate value of the criterion at unconstrained minima.
-   do concurrent(i=1:n, j=1:n)
-      if (i > j) dmat(i, j) = 0.0_dp
+   do concurrent(i=1:n, j=1:n, i > j)
+      dmat(i, j) = 0.0_dp
    end do
    call dcopy(n, dvec(1:n), 1, sol(1:n), 1)
    crval = -0.5_dp*ddot(n, sol(1:n), 1, work(1:n), 1)

@@ -167,7 +167,7 @@ contains
    !-----                             -----
    !---------------------------------------
 
-   type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
+   module type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
       implicit none
       real(dp), intent(in)           :: P(:, :), q(:)
       real(dp), optional, intent(in) :: A(:, :), b(:)
@@ -208,7 +208,7 @@ contains
       return
    end function initialize_qp_problem
 
-   subroutine get_constraints_matrix(prob, G, h)
+   module subroutine get_constraints_matrix(prob, G, h)
       implicit none
       type(qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
@@ -245,7 +245,7 @@ contains
       return
    end subroutine get_constraints_matrix
 
-   type(OptimizeResult) function solve_standard_qp(problem, legacy) result(result)
+   module type(OptimizeResult) function solve_standard_qp(problem, legacy) result(result)
       implicit none
       type(qp_problem), intent(in) :: problem
       logical, optional, intent(in) :: legacy
@@ -288,8 +288,8 @@ contains
    !-----                            -----
    !--------------------------------------
 
-   type(compact_qp_problem) function initialize_compact_qp_problem(P, q, A, iamat, b, &
-                                                                   C, icmat, d) result(prob)
+   module type(compact_qp_problem) function initialize_compact_qp_problem(P, q, A, iamat, b, &
+                                                                          C, icmat, d) result(prob)
       implicit none
       real(dp), intent(in)           :: P(:, :), q(:)
       real(dp), optional, intent(in) :: A(:, :), b(:)
@@ -336,7 +336,7 @@ contains
       end if
    end function initialize_compact_qp_problem
 
-   subroutine get_compact_constraints_matrix(prob, G, igmat, h)
+   module subroutine get_compact_constraints_matrix(prob, G, igmat, h)
       implicit none
       type(compact_qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
@@ -388,7 +388,7 @@ contains
       return
    end subroutine get_compact_constraints_matrix
 
-   type(OptimizeResult) function solve_compact_qp(problem) result(result)
+   module type(OptimizeResult) function solve_compact_qp(problem) result(result)
       implicit none
       type(compact_qp_problem), intent(in) :: problem
       real(dp), allocatable :: P(:, :), q(:)
