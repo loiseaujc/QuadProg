@@ -71,13 +71,13 @@ jobs:
 
       - name: cmake test (debug)
         run: |
-          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_COMPILER=${{ matrix.compiler }} -G Ninja
+          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_COMPILER=${{ matrix.compiler }}
           cmake --build build/debug
           ctest --test-dir build/debug --output-on-failure
 
       - name: cmake test (release)
         run: |
-          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_COMPILER=${{ matrix.compiler }} -G Ninja
+          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_COMPILER=${{ matrix.compiler }}
           cmake --build build/release
           ctest --test-dir build/release --output-on-failure
 
