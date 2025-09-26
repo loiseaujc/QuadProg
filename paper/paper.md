@@ -124,7 +124,7 @@ Additionally, `Modern QuadProg` exposes the following specialized interfaces:
 - `x = nnls(A, b)` : solve a non-negative least-squares problem.
 - `x = bvls(A, b, ub, lb)` : solve the bounded least-squares problem.
 
-More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example). These include the construction of a linear MPC controller with bounded actuation, an SVM classifier, as well as a Markowitz portfolio optimization problem.
+More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example). These include the construction of a linear MPC controller with bounded actuation, as well as a Markowitz portfolio optimization problem.
 
 # Performance considerations
 
@@ -159,7 +159,7 @@ Another alternative would be to implement the extension of the Goldfarb & Idnani
 **Lack of interfaces with other languages :** We do not currently provide bindings to other languages.
 Interfacing `Fortran` codes with `Python` can however be done relatively easily using utilities such as `f2py` [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
 Similar packages likely exist to interface with other languages (e.g. `R` or `Julia`).
-Note moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language as well.
+Note moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language.
 
 # Acknowledgements
 
