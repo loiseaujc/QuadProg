@@ -1,0 +1,156 @@
+name: Setup Fortran Conda CI/CD
+
+on:
+  push:
+    branches: [main, master, dev, cmake_build]
+
+permissions:
+  contents: write
+
+jobs:
+
+  # Run FPM tests (debug + release) on all OS/compiler combinations
+  test_fpm:
+    name: ${{ matrix.os }}_${{ matrix.compiler }}_fpm
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: gfortran
+            compiler-version: 13.3.0
+            flag-debug: "-Wno-external-argument-mismatch -coverage"
+            extra-packages: "lcov"
+          - os: ubuntu-latest
+            compiler: ifx
+            compiler-version: 2025.2.1
+            extra-packages: ""
+
+    steps:
+      - name: Setup Fortran
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          compiler: ${{ matrix.compiler }}
+          platform: ${{ matrix.os }}
+          extra-packages: ${{ matrix.extra-packages }}
+
+      - name: fpm test (debug)
+        run: fpm test --compiler ${{ matrix.compiler }} --profile debug --verbose
+
+      - name: fpm test (release)
+        run: fpm test --compiler ${{ matrix.compiler }} --profile release --verbose
+
+  # Run CMake + Ninja build/tests across OS/compiler matrix
+  test_cmake:
+    name: ${{ matrix.os }}_${{ matrix.compiler }}_cmake
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        compiler: [gfortran, ifx, lfortran, flang-new, nvfortran]
+        include:
+          - os: ubuntu-latest
+            extra-packages: ""
+          - os: windows-latest
+            extra-packages: ""
+          - os: macos-latest
+            extra-packages: ""
+        exclude:
+          - os: macos-latest
+            compiler: flang-new
+          - os: macos-latest
+            compiler: ifx
+          - os: macos-latest
+            compiler: nvfortran
+          - os: windows-latest
+            compiler: nvfortran
+
+    steps:
+      - name: Setup Fortran
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          compiler: ${{ matrix.compiler }}
+          platform: ${{ matrix.os }}
+          extra-packages: ${{ matrix.extra-packages }}
+
+      - name: cmake test (debug)
+        run: |
+          cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug -DCMAKE_Fortran_COMPILER=${{ matrix.compiler }} -G Ninja
+          cmake --build build/debug
+          ctest --test-dir build/debug --output-on-failure
+
+      - name: cmake test (release)
+        run: |
+          cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DCMAKE_Fortran_COMPILER=${{ matrix.compiler }} -G Ninja
+          cmake --build build/release
+          ctest --test-dir build/release --output-on-failure
+
+  # Build and deploy FORD documentation
+  doc_ford:
+    name: Generate FORD Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup and Generate FORD Documentation
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          compiler: gfortran
+          generate-doc-ford: true
+          ford-working-directory: .
+          ford-config: README.md
+          ford-output-directory: doc/ford
+          ford-branch: gh-pages-ford
+          ford-target-folder: doc/ford
+
+  # Generate STATUS.md from FPM job results
+  # status_fpm:
+  #   name: Generate STATUS.md
+  #   if: always()
+  #   needs: test_fpm
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Generate summary
+  #       uses: gha3mi/setup-fortran-conda@latest
+  #       with:
+  #         generate-status-fpm: true
+  #
+  # # Generate STATUS.md from CMake job results
+  # status_cmake:
+  #   name: Generate STATUS.md
+  #   if: always()
+  #   needs: test_cmake
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Generate summary
+  #       uses: gha3mi/setup-fortran-conda@latest
+  #       with:
+  #         generate-status-cmake: true
+
+  # Inject CI status table into README.md
+  # update_readme_table:
+  #   name: Update README.md status table
+  #   if: |
+  #     always() &&
+  #     github.ref != 'refs/heads/update-readme-table'
+  #   needs: [status_fpm, status_cmake]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Update README status
+  #       uses: gha3mi/setup-fortran-conda@latest
+  #       with:
+  #         update-readme-table: true
+  #         update-readme-token: ${{ secrets.GH_PAT }}   # Update with your GitHub personal access token
+  #         update-readme-user-name: "Your Name" # Update with your name
+  #         update-readme-user-email: "you@example.com"  # Update with your email
+
+  # Run Fortran linter with Fortitude
+  # linter_fortitude:
+  #   name: Run Fortitude Linter
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Run Fortitude Linter
+  #       uses: gha3mi/setup-fortran-conda@latest
+  #       with:
+  #         fortitude-check: true
+  #         fortitude-settings: "--output-format github"

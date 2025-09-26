@@ -1,0 +1,1 @@
+ADDTEST(simple_problems)

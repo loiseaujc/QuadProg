@@ -41,7 +41,7 @@ contains
 
       print *
       print *, "--------------------"
-      print *, "     * Problem ID :                                    ", pname(6:)
+      print *, "     * Problem ID :                           ", pname(6:)
       print *, "         - Number of variables              : ", size(problem%P, 1)
       print *, "         - Number of equality constraints   : ", problem%neq
       print *, "         - Number of inequality constraints : ", problem%ncons - problem%neq
