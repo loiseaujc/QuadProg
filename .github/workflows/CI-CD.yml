@@ -32,6 +32,7 @@ jobs:
         uses: gha3mi/setup-fortran-conda@latest
         with:
           compiler: ${{ matrix.compiler }}
+          compiler-version: ${{ matrix.compiler-version }}
           platform: ${{ matrix.os }}
           extra-packages: ${{ matrix.extra-packages }}
 
@@ -64,6 +65,7 @@ jobs:
         uses: gha3mi/setup-fortran-conda@latest
         with:
           compiler: ${{ matrix.compiler }}
+          compiler-version: ${{ matrix.compiler-version }}
           platform: ${{ matrix.os }}
           extra-packages: ${{ matrix.extra-packages }}
 
@@ -79,21 +81,21 @@ jobs:
           cmake --build build/release
           ctest --test-dir build/release --output-on-failure
 
-  # Build and deploy FORD documentation
-  doc_ford:
-    name: Generate FORD Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Setup and Generate FORD Documentation
-        uses: gha3mi/setup-fortran-conda@latest
-        with:
-          compiler: gfortran
-          generate-doc-ford: true
-          ford-working-directory: .
-          ford-config: README.md
-          ford-output-directory: doc/ford
-          ford-branch: gh-pages-ford
-          ford-target-folder: doc/ford
+  # # Build and deploy FORD documentation
+  # doc_ford:
+  #   name: Generate FORD Documentation
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Setup and Generate FORD Documentation
+  #       uses: gha3mi/setup-fortran-conda@latest
+  #       with:
+  #         compiler: gfortran
+  #         generate-doc-ford: true
+  #         ford-working-directory: .
+  #         ford-config: README.md
+  #         ford-output-directory: doc/ford
+  #         ford-branch: gh-pages-ford
+  #         ford-target-folder: doc/ford
 
   # Generate STATUS.md from FPM job results
   # status_fpm:
