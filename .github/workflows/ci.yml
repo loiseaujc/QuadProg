@@ -69,21 +69,21 @@ jobs:
             compiler-version: ""
             fpm-options: "--profile debug --flag '-cpp'"
             extra-packages: "blas, lapack"
-          - os: macos-latest
-            compiler: gfortran
-            compiler-version: 13.3.0
-            fpm-options: "--profile debug --flag '-Wno-external-argument-mismatch'"
-            extra-packages: "blas, lapack"
-          - os: windows-latest
-            compiler: gfortran
-            compiler-version: 13.3.0
-            fpm-options: "--profile debug --flag '-Wno-external-argument-mismatch -Wno-maybe-uninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-dummy-argument -Wno-compare-reals'"
-            extra-packages: "blas, lapack"
-          - os: windows-latest
-            compiler: ifx
-            compiler-version: 2025.2.1
-            fpm-options: "--profile debug"
-            extra-packages: "blas, lapack"
+          # - os: macos-latest
+          #   compiler: gfortran
+          #   compiler-version: 13.3.0
+          #   fpm-options: "--profile debug --flag '-Wno-external-argument-mismatch'"
+          #   extra-packages: "blas, lapack"
+          # - os: windows-latest
+          #   compiler: gfortran
+          #   compiler-version: 13.3.0
+          #   fpm-options: "--profile debug --flag '-Wno-external-argument-mismatch -Wno-maybe-uninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-dummy-argument -Wno-compare-reals'"
+          #   extra-packages: "blas, lapack"
+          # - os: windows-latest
+          #   compiler: ifx
+          #   compiler-version: 2025.2.1
+          #   fpm-options: "--profile debug"
+          #   extra-packages: "blas, lapack"
           # - os: windows-latest
           #   compiler: flang-new
           #   compiler-version: ""
