@@ -35,14 +35,7 @@ contains
 
       do i = 1, size(problems)
          problem = get_problem_data(problems(i))
-
-         !> Modern driver.
-         solution = solve(problem, legacy=.false.)
-         call check(error, solution%success, .true.)
-         if (allocated(error)) return
-
-         !> Legacy driver.
-         solution = solve(problem, legacy=.true.)
+         solution = solve(problem)
          call check(error, solution%success, .true.)
          if (allocated(error)) return
       end do
