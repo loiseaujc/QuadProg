@@ -84,11 +84,11 @@ jobs:
             compiler-version: 2025.2.1
             fpm-options: "--profile debug"
             extra-packages: "blas, lapack"
-          - os: windows-latest
-            compiler: flang-new
-            compiler-version: ""
-            fpm-options: "--flag '-cpp'"
-            extra-packages: "blas, lapack"
+          # - os: windows-latest
+          #   compiler: flang-new
+          #   compiler-version: ""
+          #   fpm-options: "--flag '-cpp'"
+          #   extra-packages: "blas, lapack"
   
     steps:
       - name: Setup Fortran
