@@ -26,22 +26,8 @@ module quadprog_benchmark
                                                                        "test/data/LASER" &
                                                                        ]
 
-   public :: get_problem_data, problem_description
+   public :: get_problem_data
 contains
-
-   integer function problem_description(problem, pname) result(ierr)
-      type(qp_problem), intent(in) :: problem
-      character(len=*), intent(in) :: pname
-
-      print *
-      print *, "--------------------"
-      print *, "     * Problem ID :                                    ", pname(6:)
-      print *, "         - Number of variables              : ", size(problem%P, 1)
-      print *, "         - Number of equality constraints   : ", problem%neq
-      print *, "         - Number of inequality constraints : ", problem%ncons - problem%neq
-      print *
-      return
-   end function
 
    type(qp_problem) function get_problem_data(fname) result(problem)
       character(len=*), intent(in) :: fname
