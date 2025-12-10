@@ -187,11 +187,12 @@ contains
    !-----                             -----
    !---------------------------------------
 
-   module type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
+   module function initialize_qp_problem(P, q, A, b, C, d) result(prob)
       implicit none
       real(dp), intent(in)           :: P(:, :), q(:)
       real(dp), optional, intent(in) :: A(:, :), b(:)
       real(dp), optional, intent(in) :: C(:, :), d(:)
+      type(qp_problem) :: prob
       integer :: info, n
 
       prob%neq = 0; prob%ncons = 0
