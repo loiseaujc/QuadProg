@@ -16,6 +16,7 @@
 !  usa.
 submodule(quadprog) modernized_drivers
    use quadprog_constants, only: dp
+   use stdlib_linalg_blas, only: daxpy => axpy
    implicit none
 contains
 !  this routine uses the goldfarb/idnani algorithm to solve the
