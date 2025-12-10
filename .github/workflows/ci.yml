@@ -14,22 +14,21 @@ jobs:
             compiler: gfortran
             compiler-version: 14.1.0
             flag-debug: "-coverage"
-            extra-packages: "lcov, blas, lapack"
+            extra-packages: "lcov"
           - os: ubuntu-latest
             compiler: ifx
             compiler-version: 2025.2.1
-            extra-packages: "blas, lapack"
            
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          activate-environment: fortran
-          channels: conda-forge, defaults
+      # - name: Setup Conda
+      #   uses: conda-incubator/setup-miniconda@v3
+      #   with:
+      #     auto-update-conda: true
+      #     activate-environment: fortran
+      #     channels: conda-forge, defaults
 
       - name: Setup Fortran
         uses: gha3mi/setup-fortran-conda@latest
