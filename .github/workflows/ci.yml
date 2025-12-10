@@ -1,36 +1,96 @@
 name: ci
 on: [push]
 
+# jobs:
+#   test:
+#     runs-on: ${{ matrix.os }}
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         os: [ubuntu-latest]
+#         compiler: [gfortran, ifx]
+#         include:
+#           - os: ubuntu-latest
+#             compiler: gfortran
+#             compiler-version: 14.1.0
+#             flag-debug: "-coverage"
+#             extra-packages: "lcov, blas, lapack"
+#           - os: ubuntu-latest
+#             compiler: ifx
+#             compiler-version: 2025.2.1
+#             extra-packages: "blas, lapack"
+#
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+#
+#       - name: Setup Conda
+#         uses: conda-incubator/setup-miniconda@v3
+#         with:
+#           auto-update-conda: true
+#           activate-environment: fortran
+#           channels: conda-forge, defaults
+#
+#       - name: Setup Fortran
+#         uses: gha3mi/setup-fortran-conda@latest
+#         with:
+#           compiler: ${{ matrix.compiler }}
+#           compiler-version: ${{ matrix.compiler-version }}
+#           platform: ${{ matrix.os }}
+#           extra-packages: ${{ matrix.extra-packages }}
+
 jobs:
-  test:
+
+  # Run FPM tests (debug + release) on all OS/compiler combinations
+  test_fpm:
+    name: ${{ matrix.os }}_${{ matrix.compiler }}_fpm
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        compiler: [gfortran, ifx]
         include:
           - os: ubuntu-latest
             compiler: gfortran
-            compiler-version: 14.1.0
-            flag-debug: "-coverage"
+            compiler-version: 13.3.0
+            fpm-options: "--profile debug --flag '-Wno-external-argument-mismatch -coverage'"
             extra-packages: "lcov, blas, lapack"
           - os: ubuntu-latest
             compiler: ifx
             compiler-version: 2025.2.1
+            fpm-options: "--profile debug"
             extra-packages: "blas, lapack"
-           
+          - os: ubuntu-latest
+            compiler: nvfortran
+            compiler-version: ""
+            fpm-options: "--profile debug"
+            extra-packages: "blas, lapack"
+          - os: ubuntu-latest
+            compiler: flang-new
+            compiler-version: ""
+            fpm-options: "--profile debug --flag '-cpp'"
+            extra-packages: "blas, lapack"
+          - os: macos-latest
+            compiler: gfortran
+            compiler-version: 13.3.0
+            fpm-options: "--profile debug --flag '-Wno-external-argument-mismatch'"
+            extra-packages: "blas, lapack"
+          - os: windows-latest
+            compiler: gfortran
+            compiler-version: 13.3.0
+            fpm-options: "--profile debug --flag '-Wno-external-argument-mismatch -Wno-maybe-uninitialized -Wno-unused-parameter -Wno-unused-variable -Wno-unused-dummy-argument -Wno-compare-reals'"
+            extra-packages: "blas, lapack"
+          - os: windows-latest
+            compiler: ifx
+            compiler-version: 2025.2.1
+            fpm-options: "--profile debug"
+            extra-packages: "blas, lapack"
+          - os: windows-latest
+            compiler: flang-new
+            compiler-version: ""
+            fpm-options: "--flag '-cpp'"
+            extra-packages: "blas, lapack"
+  
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          activate-environment: fortran
-          channels: conda-forge, defaults
-
       - name: Setup Fortran
         uses: gha3mi/setup-fortran-conda@latest
         with:
@@ -38,7 +98,6 @@ jobs:
           compiler-version: ${{ matrix.compiler-version }}
           platform: ${{ matrix.os }}
           extra-packages: ${{ matrix.extra-packages }}
-
       - name: fpm test (debug)
         run: |
           fpm build --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose
