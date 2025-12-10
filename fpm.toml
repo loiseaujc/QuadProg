@@ -21,14 +21,16 @@ source-form = "default"
 auto-executables = false
 auto-examples = false
 auto-tests = true
-link = ["lapack", "blas"]
 
 [library]
 source-dir="src"
 
+[dependencies]
+stdlib = "*"
+blas = "*"
+
 [dev-dependencies]
 test-drive.git = "https://github.com/nekStab/test-drive.git"
-stdlib = {git="https://github.com/fortran-lang/stdlib.git", branch="stdlib-fpm"}
 
 #----------------------------------------------------
 #-----     Model Predictive Control example     -----
