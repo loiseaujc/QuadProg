@@ -1,5 +1,5 @@
 module quadprog_constants
-   implicit none(type, external)
+   implicit none
    private
 
    integer, parameter, public :: dp = selected_real_kind(15, 307)
