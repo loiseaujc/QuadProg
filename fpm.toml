@@ -27,7 +27,7 @@ source-dir="src"
 
 [dependencies]
 stdlib = "*"
-blas = "*"
+# blas = "*"
 
 [dev-dependencies]
 test-drive.git = "https://github.com/nekStab/test-drive.git"

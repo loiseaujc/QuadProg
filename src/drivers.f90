@@ -256,11 +256,9 @@ contains
                sum = dot_product(work(iwzv + 1:iwzv + n), amat(1:n, nvl))
                tt = -work(iwsv + nvl)/sum
                t2min = .true.
-               if (.not. t1inf) then
-                  if (t1 < tt) then
-                     tt = t1
-                     t2min = .false.
-                  end if
+               if ((.not. t1inf) .and. (t1 < tt)) then
+                  tt = t1
+                  t2min = .false.
                end if
 
                !> Take step in primal and dual space.
@@ -302,7 +300,7 @@ contains
                         !> Find the Givens rotation reducing the l1-th element of d to zero.
                         !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
-                        call dlartg(work(i - 1), work(i), gc, gs, temp)
+                        call lartg(work(i - 1), work(i), gc, gs, temp)
 
                         !> Givens rotation is done with the matrix [gc gs, gs -gc].
                         !>    -  If gc = 1, i-th element of d is zero compared with element
@@ -360,7 +358,7 @@ contains
                l = iwrm + (it1*(it1 + 1))/2 + 1
                l1 = l + it1
                if (work(l1) /= 0.0_dp) then ! first go to 798
-                  call dlartg(work(l1 - 1), work(l1), gc, gs, temp)
+                  call lartg(work(l1 - 1), work(l1), gc, gs, temp)
 
                   !> Givens rotation is done with the matrix [gc gc ; gs -gc].
                   !> If gc = 0:
@@ -729,7 +727,7 @@ contains
                         !> Find the Givens rotation reducing the l1-th element of d to zero.
                         !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
-                        call dlartg(work(i - 1), work(i), gc, gs, temp)
+                        call lartg(work(i - 1), work(i), gc, gs, temp)
 
                         !> Givens rotation is done with the matrix [gc gs, gs -gc].
                         !>    -  If gc = 1, i-th element of d is zero compared with element

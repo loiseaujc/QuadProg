@@ -1,9 +1,10 @@
 module QuadProg
    use quadprog_constants, only: dp
-   use stdlib_linalg, only: cholesky, norm, linalg_state_type
+   use stdlib_linalg, only: cholesky, norm, qr, linalg_state_type
    use stdlib_linalg_blas, only: scal, axpy, copy, swap, &
                                  trmv, gemv, tpsv, rot
-   use stdlib_linalg_lapack, only: trtri, potrs
+   use stdlib_linalg_lapack, only: trtri, potrs, lartg, &
+                                   geqrf, orgqr
    use stdlib_intrinsics, only: dot_product => stdlib_dot_product
    implicit none
    private
@@ -155,14 +156,14 @@ module QuadProg
    interface
       module function nnls(A, b) result(x)
          implicit none
-         real(dp), intent(in)           :: A(:, :)
+         real(dp), intent(inout)        :: A(:, :)
          real(dp), intent(in)           :: b(:)
          real(dp), allocatable          :: x(:)
       end function nnls
 
       module function bvls(A, b, ub, lb) result(x)
          implicit none
-         real(dp), intent(in)           :: A(:, :)
+         real(dp), intent(inout)        :: A(:, :)
          real(dp), intent(in)           :: b(:)
          real(dp), optional, intent(in) :: ub(:)
          real(dp), optional, intent(in) :: lb(:)
@@ -175,12 +176,6 @@ module QuadProg
    !---------------------------------------------------------------
 
    interface
-      module subroutine qr(A, Q, R)
-         implicit none
-         real(dp), intent(in) :: A(:, :)
-         real(dp), allocatable, intent(out) :: Q(:, :), R(:, :)
-      end subroutine qr
-
       module subroutine cho_solve(A, b)
          implicit none
          real(dp), intent(in) :: A(:, :)
@@ -330,7 +325,7 @@ contains
       prob%P = P; prob%q = q; n = size(P, 1)
 
       !> Pre-factorize the symmetric positive definite matrix.
-      call dpotrf("u", n, prob%P, n, info)
+      call cholesky(prob%P, lower=.false., other_zeroed=.true.)
       call trtri("u", "n", n, prob%P, n, info)
 
       !> Sanity checks for the equality constraints.
