@@ -1,12 +1,16 @@
 module QuadProg
    use quadprog_constants, only: dp
+   use stdlib_linalg, only: cholesky, norm, linalg_state_type
+   use stdlib_linalg_blas, only: scal, axpy, copy, swap, &
+                                 trmv, gemv, tpsv, rot
+   use stdlib_linalg_lapack, only: trtri, potrs
+   use stdlib_intrinsics, only: dot_product => stdlib_dot_product
    implicit none
    private
 
    public :: dp
    public :: solve
    public :: nnls, bvls
-   public :: qpgen1, qpgen2
 
    !---------------------------------
    !-----     DERIVED-TYPES     -----
@@ -176,6 +180,12 @@ module QuadProg
          real(dp), intent(in) :: A(:, :)
          real(dp), allocatable, intent(out) :: Q(:, :), R(:, :)
       end subroutine qr
+
+      module subroutine cho_solve(A, b)
+         implicit none
+         real(dp), intent(in) :: A(:, :)
+         real(dp), target, intent(inout) :: b(:)
+      end subroutine cho_solve
    end interface
 
 contains
@@ -192,6 +202,7 @@ contains
       real(dp), optional, intent(in) :: A(:, :), b(:)
       real(dp), optional, intent(in) :: C(:, :), d(:)
       integer :: info, n
+      type(linalg_state_type) :: err
 
       prob%neq = 0; prob%ncons = 0
 
@@ -203,8 +214,8 @@ contains
       prob%P = P; prob%q = q; n = size(P, 1)
 
       !> Pre-factorize the symmetric positive definite matrix.
-      call dpotrf("u", n, prob%P, n, info)
-      call dtrtri("u", "n", n, prob%P, n, info)
+      call cholesky(prob%P, lower=.false., other_zeroed=.true.)
+      call trtri("u", "n", n, prob%P, n, info)
 
       !> Sanity checks for the equality constraints.
       if (present(A) .and. .not. present(b)) error stop "Right-hand side vector b for the equality constraints is missing."
@@ -320,7 +331,7 @@ contains
 
       !> Pre-factorize the symmetric positive definite matrix.
       call dpotrf("u", n, prob%P, n, info)
-      call dtrtri("u", "n", n, prob%P, n, info)
+      call trtri("u", "n", n, prob%P, n, info)
 
       !> Sanity checks for the equality constraints.
       if (present(A) .and. .not. present(iamat)) error stop "Matrix A is provided but not iamat."

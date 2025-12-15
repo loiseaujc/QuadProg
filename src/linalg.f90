@@ -35,4 +35,12 @@ contains
    call dorgqr(m, n, n, Q, m, tau, work, lwork, info)
    end procedure qr
 
+   module procedure cho_solve
+   integer :: n, info
+   real(dp), pointer :: x(:, :)
+   n = size(A, 1)
+   x(1:n, 1:1) => b
+   call potrs("u", n, 1, A, n, x, n, info)
+   end procedure cho_solve
+
 end submodule linalg
