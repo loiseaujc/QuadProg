@@ -121,30 +121,28 @@ module QuadProg
          !! Cost function at the optimum.
       end subroutine qpgen1
 
-      module subroutine qpgen2(dmat, dvec, fddmat, n, sol, lagr, crval, amat, bvec, fdamat, q, &
+      module subroutine qpgen2(dmat, dvec, sol, lagr, obj, amat, bvec, q, &
                                meq, iact, nact, iter, work, ierr)
          implicit none
-         integer, intent(in)     :: fddmat, n
-         !! Dimensions of the symmetric positive definite matrix Dmat.
-         integer, intent(in)     :: fdamat, q
+         integer, intent(in)     :: q
          !! Dimensions of the constraint matrix Amat
          integer, intent(in)     :: meq
          !! Number of equality constraints.
-         integer, intent(out)    :: iact(*), nact
+         integer, intent(out)    :: iact(:), nact
          !! Indices and number of active constraints at the optimum.
-         integer, intent(out)    :: iter(*)
+         integer, intent(out)    :: iter(2)
          !! Number of iterations.
          integer, intent(inout)  :: ierr
          !! Information flag.
-         real(dp), intent(inout) :: dmat(fddmat, *), dvec(*)
+         real(dp), intent(inout) :: dmat(:, :), dvec(:)
          !! Sym. pos. def. matrix and vector defining the quadratic cost.
-         real(dp), intent(out)   :: lagr(*), sol(*)
+         real(dp), intent(out)   :: lagr(:), sol(:)
          !! Lagrange multipliers and solution vector.
-         real(dp), intent(inout) :: amat(fdamat, *), bvec(*)
+         real(dp), intent(inout) :: amat(:, :), bvec(:)
          !! Matrix and vector defining the (in-)equality constraints.
-         real(dp), intent(inout) :: work(*)
+         real(dp), intent(inout) :: work(:)
          !! Workspace.
-         real(dp), intent(out)   :: crval
+         real(dp), intent(out)   :: obj
          !! Cost function at the optimum.
       end subroutine qpgen2
    end interface
@@ -292,7 +290,7 @@ contains
       call get_constraints_matrix(problem, G, h)
       !> Solve the QP problem.
       info = 1 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, n, n, result%x, result%y, result%obj, G, h, n, &
+      call qpgen2(P, q, result%x, result%y, result%obj, G, h, &
                   ncons, neq, iact, nact, iter, work, info)
       !> Success?
       result%success = (info == 0)

@@ -80,12 +80,14 @@ contains
 !        where r=min(n,q)
 
    module procedure qpgen2
+   integer :: n
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
    real(dp) :: residuals(q)
    type(linalg_state_type) :: err
 
+   n = size(dmat, 1)
    r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
    vsmall = epsilon(1.0_dp)                           ! Machine precision.
 
@@ -100,12 +102,11 @@ contains
    if (ierr == 0) then
       !> Matrix has not been factorized yet.
       call cholesky(dmat(:n, :n), lower=.false., other_zeroed=.true., err=err)
-      ! call dpotrf("u", fddmat, dmat, n, info)   ! Cholesky factorization.
       if (err%error()) then
          ierr = 2; return
       end if
       call cho_solve(dmat(:n, :n), dvec(:n))
-      call trtri("u", "n", fddmat, dmat, n, info) ! Compute inv(R) from Chol. fact.
+      call trtri("u", "n", n, dmat, n, info) ! Compute inv(R) from Chol. fact.
    else
       !> Matrix has already been pre-factorized by calling dpofa and dpori.
       !> Multiply by inv(R).T
@@ -119,7 +120,7 @@ contains
    !>    - store dvec in sol,
    !>    - calculate value of the criterion at unconstrained minima.
    call copy(n, dvec(1:n), 1, sol(1:n), 1)
-   crval = -0.5_dp*dot_product(sol(1:n), work(1:n))
+   obj = -0.5_dp*dot_product(sol(1:n), work(1:n))
    ierr = 0
 
    !> Calculate some constants, i.e., from which index on the different
@@ -135,7 +136,7 @@ contains
    do i = 1, q
       work(iwnbv + i) = norm(amat(1:n, i), 2)
    end do
-   nact = 0; iter(1) = 0; iter(2) = 0
+   nact = 0; iter = 0
 
    !-------------------------------------------------------------------------
    !-----     ACTIVE SET METHOD FOR SOLVING THE CONSTRAINED PROBLEM     -----
@@ -263,7 +264,7 @@ contains
 
                !> Take step in primal and dual space.
                call axpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
-               crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
+               obj = obj + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
                call axpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
                          work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
@@ -507,7 +508,7 @@ contains
          ierr = 2; return
       end if
       call cho_solve(dmat(:n, :n), dvec(:n))
-      call trtri("u", "n", fddmat, dmat, n, info) ! Compute inv(R) from Chol. fact.
+      call trtri("u", "n", n, dmat, n, info) ! Compute inv(R) from Chol. fact.
    else
       !> Matrix has already been pre-factorized by calling dpofa and dpori.
       !> Multiply by inv(R).T
