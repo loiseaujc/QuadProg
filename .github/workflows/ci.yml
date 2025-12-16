@@ -9,7 +9,7 @@ jobs:
 
     # Run FPM tests (debug + release) on all OS/compiler combination.
     name: ${{ matrix.os }}_${{ matrix.compiler }}_fpm
-    runs-on: ${{ matrix.is }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
