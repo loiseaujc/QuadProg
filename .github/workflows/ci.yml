@@ -18,7 +18,7 @@ jobs:
             compiler: gfortran
             compiler-version: 13.3.0
             fpm-options: "--profile debug --flag '-coverage'"
-            extra-pacakges: "lcov"
+            extra-packages: "lcov"
            
     steps:
       - name: Setup Fortran
