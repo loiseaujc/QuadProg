@@ -40,6 +40,43 @@ module QuadProg
       integer               :: neq, ncons
    end type qp_problem
    interface qp_problem
+      !!    ### Description
+      !!
+      !!    Creates an instance of the following strictly convex quadratic program
+      !!
+      !!    \[
+      !!        \begin{aligned}
+      !!            \mathrm{minimize}   &   \quad   \dfrac12 x^\top P x - x^\top q \\
+      !!            \mathrm{subject~to} &   \quad   Ax = b \\
+      !!                                &   \quad   Cx \geq d
+      !!        \end{aligned}
+      !!    \]
+      !!
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        problem = qp_problem(P, q, [A=A, b=b], [C=C, d=d])
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `P`   :   Symmetric positive definite matrix of size `n x n`. It is an `intent(in)`
+      !!                argument.
+      !!
+      !!    - `q`   :   Rank-1 array of size `n`. It is an `intent(in)` argument.
+      !!
+      !!    - `A` (optional)    :   Matrix of size `m x n` defining the equality constraints.
+      !!                            It is an `intent(in)` argument.
+      !!
+      !!    - `b` (optional)    :   Rank-1 array of size `m` defining the right-hand side of
+      !!                            the equality constraints. It is an `intent(in)` argument.
+      !!
+      !!    - `C` (optional)    :   Matrix of size `p x n` defining the inequality constraints.
+      !!                            It is an `intent(in)` argument.
+      !!
+      !!    - `d` (optional)    :   Rank-1 array of size `p` defining the right-hand side of the
+      !!                            inequality constraints. It is an `intent(in)` argument.
       module type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
          implicit none
          real(dp), intent(in)           :: P(:, :), q(:)
