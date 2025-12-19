@@ -91,11 +91,13 @@ module QuadProg
       !!        \end{aligned}
       !!    \]
       !!
-      !!    using an active set method.
+      !!    using a primal-dual active set method. The matrix $P \in \mathbb{R}^{n \times n}$
+      !!    needs to be symmetric positive definite.
       !!
       !!    **References**
       !!
-      !!    - ??
+      !!    - D. Goldfarb and A. Idnani (1983). A numerically stable dual method for solving
+      !!      strictly convex quadratic programs. Mathematical Programming, 27, 1-33.
       !!
       !!    ### Syntax
       !!
@@ -105,6 +107,12 @@ module QuadProg
       !!
       !!    ### Arguments
       !!
+      !!    - `problem` :   Derived-type `qp_problem` or `compact_qp_problem` describing the
+      !!                    quadratic program to be solved. It is an `intent(in)` argument.
+      !!
+      !!    - `result`  :   Derived-type `OptimizeResult` containing the solution of the problem,
+      !!                    the associated vector of Lagrange multipliers and the value of the
+      !!                    objective function at the constrained solution.
       module type(OptimizeResult) function solve_standard_qp(problem) result(result)
          implicit none
          type(qp_problem), intent(in) :: problem
