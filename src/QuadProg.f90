@@ -40,6 +40,43 @@ module QuadProg
       integer               :: neq, ncons
    end type qp_problem
    interface qp_problem
+      !!    ### Description
+      !!
+      !!    Creates an instance of the following strictly convex quadratic program
+      !!
+      !!    \[
+      !!        \begin{aligned}
+      !!            \mathrm{minimize}   &   \quad   \dfrac12 x^\top P x - x^\top q \\
+      !!            \mathrm{subject~to} &   \quad   Ax = b \\
+      !!                                &   \quad   Cx \geq d
+      !!        \end{aligned}
+      !!    \]
+      !!
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        problem = qp_problem(P, q, [A=A, b=b], [C=C, d=d])
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `P`   :   Symmetric positive definite matrix of size `n x n`. It is an `intent(in)`
+      !!                argument.
+      !!
+      !!    - `q`   :   Rank-1 array of size `n`. It is an `intent(in)` argument.
+      !!
+      !!    - `A` (optional)    :   Matrix of size `m x n` defining the equality constraints.
+      !!                            It is an `intent(in)` argument.
+      !!
+      !!    - `b` (optional)    :   Rank-1 array of size `m` defining the right-hand side of
+      !!                            the equality constraints. It is an `intent(in)` argument.
+      !!
+      !!    - `C` (optional)    :   Matrix of size `p x n` defining the inequality constraints.
+      !!                            It is an `intent(in)` argument.
+      !!
+      !!    - `d` (optional)    :   Rank-1 array of size `p` defining the right-hand side of the
+      !!                            inequality constraints. It is an `intent(in)` argument.
       module type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
          implicit none
          real(dp), intent(in)           :: P(:, :), q(:)
@@ -91,11 +128,13 @@ module QuadProg
       !!        \end{aligned}
       !!    \]
       !!
-      !!    using an active set method.
+      !!    using a primal-dual active set method. The matrix $P \in \mathbb{R}^{n \times n}$
+      !!    needs to be symmetric positive definite.
       !!
       !!    **References**
       !!
-      !!    - ??
+      !!    - D. Goldfarb and A. Idnani (1983). A numerically stable dual method for solving
+      !!      strictly convex quadratic programs. Mathematical Programming, 27, 1-33.
       !!
       !!    ### Syntax
       !!
@@ -105,6 +144,12 @@ module QuadProg
       !!
       !!    ### Arguments
       !!
+      !!    - `problem` :   Derived-type `qp_problem` or `compact_qp_problem` describing the
+      !!                    quadratic program to be solved. It is an `intent(in)` argument.
+      !!
+      !!    - `result`  :   Derived-type `OptimizeResult` containing the solution of the problem,
+      !!                    the associated vector of Lagrange multipliers and the value of the
+      !!                    objective function at the constrained solution.
       module type(OptimizeResult) function solve_standard_qp(problem) result(result)
          implicit none
          type(qp_problem), intent(in) :: problem
@@ -177,13 +222,68 @@ module QuadProg
    !------------------------------------------------------------------------
 
    interface
+      !!    ### Description
+      !!
+      !!    Solve the non-negative least-squares problem
+      !!
+      !!    \[
+      !!        \begin{aligned}
+      !!            \mathrm{minimize}   &   \quad   \| Ax - b \|_2^2 \\
+      !!            \mathrm{subject~to} &   \quad   x \geq 0.
+      !!        \end{aligned}
+      !!    \]
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        x = nnls(A, b)
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `A`   :   Matrix of size `m x n`, with `m >= n`. It is an `intent(in)` argument.
+      !!
+      !!    - `b`   :   Rank-1 array of size `m`. It is an `intent(in)` argument.
+      !!
+      !!    - `x`   :   Rank-1 array of size `n` returned by the function. It contains the
+      !!                non-negative coefficients of the least-squares fit.
       module function nnls(A, b) result(x)
          implicit none
          real(dp), intent(inout)        :: A(:, :)
          real(dp), intent(in)           :: b(:)
          real(dp), allocatable          :: x(:)
       end function nnls
+   end interface
 
+   interface
+      !!    ### Description
+      !!
+      !!    Solve the bounded least-squares problem
+      !!
+      !!    \[
+      !!        \begin{aligned}
+      !!            \mathrm{minimize}   &   \quad   \| A x - b \|_2^2 \\
+      !!            \mathrm{subject~to} &   \quad   l \leq x \leq u
+      !!        \end{aligned}
+      !!    \]
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        call bvls(A, b [, ub] [, lb])
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `A`   :   Matrix of size `m x n` with `m >= n`. It is an `intent(in)` argument.
+      !!
+      !!    - `b`   :   Rank-1 array of size `m`. It is an `intent(in)` argument.
+      !!
+      !!    - `lb` (optional)   :   Rank-1 array of size `n` defining the lower bounds for the
+      !!                            solution of the problem. It is an `intent(in)` argument.
+      !!
+      !!    - `ub` (optional)   :   Rank-1 array of size `n` defining the upper bounds for the
+      !!                            solution of the problem. It is an `intent(in)` argument.
       module function bvls(A, b, ub, lb) result(x)
          implicit none
          real(dp), intent(inout)        :: A(:, :)
