@@ -7,6 +7,7 @@ program check
    use QuadProg
    ! Collection of test problems.
    use TestProblems
+   use TestBenchmarkProblems
    use TestLstsqVariants
    implicit none
 
@@ -19,11 +20,16 @@ program check
    status = 0
    testsuites = [ &
                 new_testsuite("Simple problems", collect_test_problems), &
+                new_testsuite("Benchmark problems", collect_test_benchmark_problems), &
                 new_testsuite("Least-squares variants", collect_lstsq_problems) &
                 ]
 
    ! Run all the test suites.
    do i = 1, size(testsuites)
+      write (*, *) "-------------------------------"
+      write (error_unit, fmt) "Testing :", testsuites(i)%name
+      write (*, *) "-------------------------------"
+      write (*, *)
       call run_testsuite(testsuites(i)%collect, error_unit, status)
    end do
 

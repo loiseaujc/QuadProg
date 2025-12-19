@@ -21,10 +21,13 @@ source-form = "default"
 auto-executables = false
 auto-examples = false
 auto-tests = true
-link = ["openblas"]
 
 [library]
 source-dir="src"
+
+[dependencies]
+stdlib = "*"
+assert = {git="https://github.com/BerkeleyLab/assert.git"}
 
 [dev-dependencies]
 test-drive.git = "https://github.com/nekStab/test-drive.git"

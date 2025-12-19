@@ -55,7 +55,7 @@ QuadProg = { git="https://github.com/loiseaujc/QuadProg.git"}
 
 ### Dependencies
 
-The library requires some [`blas`](https://netlib.org/blas/) and [`lapack`](https://www.netlib.org/lapack/) routines which are not included. You thus need to have it available on your system.
+The library requires some [`blas`](https://netlib.org/blas/) and [`lapack`](https://www.netlib.org/lapack/) routines which are not included. You thus need to have it available on your system, otherwise it'll automatically pull them from the fortran standard library [`stdlib`](https://github.com/fortran-lang/stdlib).
 
 ### Example
 
