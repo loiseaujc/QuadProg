@@ -13,7 +13,7 @@ authors:
 affiliations:
  - name: Arts et Métiers Institute of Technology
    index: 1
-date: 13 August 2017
+date: 19 December 2025
 bibliography: paper.bib
 ---
 
@@ -40,16 +40,16 @@ Many problems in science and engineering can be formulated as convex quadratic p
 
 ## A modernized implementation
 
-Among the many algorithms proposed to solve convex QPs, the one by @goldfarb-idnani has proven to be efficient, numerically stable and accurate. A popular implementation of this algorithm is `quadprog` by Berwin Turlach, interfaced with the `R` programming language as early as 1997 [@turlach2007quadprog]. Since then, `quadprog` has been ported to many different languages, including [JavaScript](https://github.com/albertosantini/quadprog), [Rust](https://docs.rs/quadprog/latest/quadprog/), or [Julia](https://github.com/fabienlefloch/GoldfarbIdnaniSolver.jl).
-Yet, very little effort within the Fortran community has been devoted to modernizing the original source code. This contribution is a step in this direction. It is part of a wider community-driven effort aiming at modernizing the overall Fortran ecosystem.
+Among the many algorithms proposed to solve convex QPs, the one by @goldfarb-idnani has proven to be efficient, numerically stable and accurate. A popular implementation is `quadprog` by Berwin Turlach, interfaced with the `R` programming language as early as 1997 [@turlach2007quadprog]. Since then, `quadprog` has been ported to many different languages, including [JavaScript](https://github.com/albertosantini/quadprog), [Rust](https://docs.rs/quadprog/latest/quadprog/), or [Julia](https://github.com/fabienlefloch/GoldfarbIdnaniSolver.jl).
+Yet, little effort within the Fortran community has been devoted to modernizing the original source code. This contribution is a step in this direction. It is part of a wider community-driven effort aiming at modernizing the Fortran ecosystem at large.
 
 Written in FORTRAN 77, the original `quadprog` implementation makes use of language features now considered as obsolete. Moreover, `blas` and `lapack` being not as well established back then as they are today, many vector and matrix-vector operations relied on simple implementations, potentially hindering the use of modern CPU instructions or hardware acceleration. In our modernization effort, the most important updates to the original code include:
 
 - Sources have been translated from FORTRAN 77 fixed-form to Fortran 90 free-from.
-- All obsolescent features (`goto`, `continue`, etc) have been removed and the code base now is fully compliant with the Fortran 2018 standard.
+- All obsolescent features (`goto`, `continue`, etc) have been removed and the code is now fully compliant with the Fortran 2018 standard.
 - Calls to appropriate `blas` and `lapack` functions now replace most hand-crafted or `linpack` implementations for improved performances.
 
-While we retained the definition of the original interfaces (see `qpgen1` and `qpgen2`), we also provide modern object-oriented interfaces (see `qp_problem`) as well as utility functions to solve non-negative least-squares (`nnls`) and bounded-variables least-squares (`bvls`).
+We also provide modern object-oriented interfaces (see `qp_problem`) as well as utility functions to solve non-negative least-squares (`nnls`) and bounded-variables least-squares (`bvls`).
 
 ## A modern object-oriented interface
 
@@ -59,13 +59,13 @@ A notable introduction in `Modern QuadProg` are object-oriented interfaces. Give
 problem = qp_problem(P, q, A=A, b=b, C=C, d=d)
 ```
 
-where `A`, `b`, `C` and `d` are optional arguments. It needs to be noted that, while we do check the dimensions of the different matrices and vectors are consistent, it is left to the user to make sure $\mathbf{P}$ is indeed symmetric positive definite as its factorization relies on `lapack` and makes use only of its upper triangular part. Once instantiated, this problem can be solved with
+where `A`, `b`, `C` and `d` are optional arguments. While we do check the dimensions of the different matrices and vectors are consistent, it is left to the user to make sure $\mathbf{P}$ is indeed symmetric positive definite as its factorization relies on `lapack` and makes use only of its upper triangular part. Once instantiated, this problem can be solved with
 
 ```fortran
 solution = solve(problem)
 ```
 
-where `solution` is a derived-type storing the solution of the constrained QP, the vector of Lagrange multipliers and the minimum of the objective function evaluated at the constrained solution.
+where `solution` is a derived-type storing the solution of the constrained QP, the vector of Lagrange multipliers and the value of the objective function evaluated at the constrained solution.
 
 # Example
 
@@ -82,6 +82,7 @@ $$
 
 ```fortran
 program example
+    use stdlib_linalg, only: eye
     use quadprog
     implicit none
     integer, parameter :: dp = selected_real_kind(15, 307)
@@ -96,16 +97,12 @@ program example
     integer :: i
 
     !> Setup the quadratic function..
-    P = 0.0_dp ; q = [0.0_dp, 5.0_dp, 0.0_dp]
-    do i = 1, n
-        P(i, i) = 1.0_dp
-    enddo
+    P = eye(n) ; q = [0.0_dp, 5.0_dp, 0.0_dp]
     
     !> Setup the inequality constraints.
-    C(:, 1) = [-4.0_dp, 2.0_dp, 0.0_dp]
-    C(:, 2) = [-3.0_dp, 1.0_dp, -2.0_dp]
-    C(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp]
-    d = [-8.0_dp, 2.0_dp, 0.0_dp]
+    C(:, 1) = [-4.0_dp, 2.0_dp, 0.0_dp]  ; d(1) = -8.0_dp
+    C(:, 2) = [-3.0_dp, 1.0_dp, -2.0_dp] ; d(2) = -2.0_dp
+    C(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp]   ; d(3) = 0.0_dp
 
     !> Solve the inequality constrained QP.
     prob = qp_problem(P, q, C=C, d=d)
@@ -119,11 +116,6 @@ program example
 end program
 ```
 
-Additionally, `Modern QuadProg` exposes the following specialized interfaces:
-
-- `x = nnls(A, b)` : solve a non-negative least-squares problem.
-- `x = bvls(A, b, ub, lb)` : solve the bounded least-squares problem.
-
 More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example). These include the construction of a linear MPC controller with bounded actuation, as well as a Markowitz portfolio optimization problem.
 
 # Performance considerations
@@ -133,31 +125,29 @@ Similarly, calls to deprecated `linpack` functions have been replaced by their m
 
 | Problem ID  | Number of variables | Number of constraints | Legacy | Modern | Speed-up|
 |:-----------:|:-------------------:|:---------------------:|:------:|:-------:|:--------:|
-|       HS118 | 15                  | 64                    | 25µs   | 28µs | 0.87x |
-|   LASER     | 1002                | 4004                  | 8.8s   | 2.1s | 4.1x |
-|   AUG3DCQP  | 3873                | 8746                  | 81s    | 35s | 2.3x |
+|       HS118 | 15                  | 64                    | 24µs   | 31µs | 0.8x |
+|   LASER     | 1002                | 4004                  | 8.71s   | 2.44s | 3.6x |
+|   AUG3DCQP  | 3873                | 8746                  | 82.2s    | 36.2s | 2.3x |
 
 The table above reports the computational time needed by the legacy and modernized implementations to solve three representative problems from the Maros-Meszaros test suite [@maros-meszaros].
 This test suite contains 138 convex quadratic problems.
 Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to problems having fewer than 4000 optimization variables and 10 000 constraints.
 All computations have been run on a computer equipped with an 11th Gen Intel Core i7-11850H @ 2.50 GHz.
-Both the legacy and modernized solvers have been compiled with `gfortran 14.2.0` and the following options: `-03 -march=native -mtune=native`.
+Both the legacy and modernized solvers have been compiled with `gfortran 15.2.0` and the same compilation options.
 The `blas`/`lapack` backend used is `openblas 0.3.29` installed using `conda`.
-To ensure a fair comparison, `openblas` was restricted to using a single thread.
-In addition, both solvers providing the option to use a pre-factorized matrix $\mathbf{P}$, we restrict the timings to the active set method only.
-In all cases, the modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3 for problems having roughly 50 optimization variables or more and near-identical performances for smaller problems.
-These improved performances result almost entirely from the use of `blas` and `lapack` for the different matrix-vector and matrix-matrix operations.
-<!-- A complete breakdown of these benchmarks can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository. -->
+Both solvers providing the option to use a pre-factorized matrix $\mathbf{P}$, we restrict the timings to the actual solve only.
+The modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3 for problems having roughly 50 optimization variables or more and similar performances for smaller problems (in the tenths of microseconds range).
+More details about this benchmark can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
 
 # Limitations and perspectives
 
-**Strict convexity :** `Modern QuadProg` (and its legacy ancestor) is limited to strictly convex QP.
-When the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ at the expense of solving a slightly perturbed (albeit now strictly convex) problem.
+**Strict convexity :** `Modern QuadProg` (and its ancestor) is limited to strictly convex QP.
+When the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ (with $\varepsilon > 0$) at the expense of solving a slightly perturbed (albeit now strictly convex) problem.
 In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process.
 Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @boland1996dual. 
 
 **Lack of interfaces with other languages :** We do not currently provide bindings to other languages.
-Interfacing `Fortran` codes with `Python` can however be done relatively easily using utilities such as `f2py` [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
+Interfacing `Fortran` with `Python` can however be done relatively easily using utilities such as `f2py` [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
 Similar packages likely exist to interface with other languages (e.g. `R` or `Julia`).
 Note moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language.
 
