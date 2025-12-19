@@ -188,15 +188,13 @@ contains
             !> Compute z = J_2 @ d_2
             l1 = iwzv
             work(l1 + 1:l1 + n) = 0.0_dp
-            call gemv("n", n, n - nact, 1.0_dp, P(:, nact + 1:n), n, &
-                      work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
+            call gemv("n", n, n - nact, 1.0_dp, P(:, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
             call copy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
-            call tpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), &
-                      work(iwrv + 1:iwrv + nact), 1)
+            call tpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), work(iwrv + 1:iwrv + nact), 1)
             t1inf = .true.
             do i = 1, nact
                if (iact(i) <= meq) cycle
@@ -232,8 +230,7 @@ contains
                   !> Take partial step in dual space.
                   !>    -  Drop the it1-th active constraint.
                   !>    -  Continue at step 2(a) (marked by label 55).
-                  call axpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, &
-                            work(iwuv + 1:iwuv + nact), 1)
+                  call axpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
                   work(iwuv + nact + 1) = work(iwuv + nact + 1) + t1
                   exit block700
                end if
@@ -251,8 +248,7 @@ contains
                !> Take step in primal and dual space.
                call axpy(n, tt, work(iwzv + 1:iwzv + n), 1, x, 1)
                obj = obj + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
-               call axpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
-                         work(iwuv + 1:iwuv + nact), 1)
+               call axpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
 
                !> If a full step has been taken:
