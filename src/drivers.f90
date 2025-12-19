@@ -80,48 +80,22 @@ contains
 !        where r=min(n,q)
 
    module procedure qpgen2
-   integer :: n
-   integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
+   integer  :: m, n
+   integer  :: i, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
+   real(dp) :: temp, sum, t1, tt, gc, gs, eps
    logical  :: t1inf, t2min
-   real(dp) :: residuals(q)
+   real(dp) :: residuals(size(At, 2))
    type(linalg_state_type) :: err
 
-   n = size(dmat, 1)
-   r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
-   vsmall = epsilon(1.0_dp)                           ! Machine precision.
+   !----------------------------------
+   !-----     INITIALIZATION     -----
+   !----------------------------------
 
-   !> Store the initial dvec and initialize some arrays.
-   call copy(n, dvec(1:n), 1, work(1:n), 1)
-   work(n + 1:l) = 0.0_dp; iact(1:q) = 0; lagr(1:q) = 0.0_dp
-
-   !------------------------------------------------------------
-   !-----     SOLVE UNCONSTRAINED QP AS STARTING POINT     -----
-   !------------------------------------------------------------
-
-   if (ierr == 0) then
-      !> Matrix has not been factorized yet.
-      call cholesky(dmat(:n, :n), lower=.false., other_zeroed=.true., err=err)
-      if (err%error()) then
-         ierr = 2; return
-      end if
-      call cho_solve(dmat(:n, :n), dvec(:n))
-      call trtri("u", "n", n, dmat, n, info) ! Compute inv(R) from Chol. fact.
-   else
-      !> Matrix has already been pre-factorized by calling dpofa and dpori.
-      !> Multiply by inv(R).T
-      call trmv("u", "t", "n", n, dmat, n, dvec, 1)
-      !> Multiply by inv(R).
-      call trmv("u", "n", "n", n, dmat, n, dvec, 1)
-   end if
-
-   !> Book-keeping:
-   !>    - set low triangular part of dmat to zero,
-   !>    - store dvec in sol,
-   !>    - calculate value of the criterion at unconstrained minima.
-   call copy(n, dvec(1:n), 1, sol(1:n), 1)
-   obj = -0.5_dp*dot_product(sol(1:n), work(1:n))
-   ierr = 0
+   n = size(P, 1); m = size(At, 2); r = min(n, m)   ! Various dimensions.
+   eps = epsilon(1.0_dp)            ! Machine precision.
+   call copy(n, q, 1, work(:n), 1)  ! Store linear component of the objective function.
+   call copy(n, q, 1, x, 1)         ! Copy into the solution array (in-place computations).
+   work(n + 1:) = 0.0_dp; iact = 0; y = 0.0_dp; nact = 0; iter = 0
 
    !> Calculate some constants, i.e., from which index on the different
    !> quantities are stored in the work matrix
@@ -130,17 +104,31 @@ contains
    iwuv = iwrv + r
    iwrm = iwuv + r + 1
    iwsv = iwrm + (r*(r + 1))/2
-   iwnbv = iwsv + q
+   iwnbv = iwsv + m
 
-   !> Calculate the norm of each column of the constraint matrix
-   do i = 1, q
-      work(iwnbv + i) = norm(amat(1:n, i), 2)
-   end do
-   nact = 0; iter = 0
+   !------------------------------------------------------------
+   !-----     SOLVE UNCONSTRAINED QP AS STARTING POINT     -----
+   !------------------------------------------------------------
+
+   if (ierr == 0) then
+      !> Matrix has not been factorized yet.
+      call cholesky(P, lower=.false., other_zeroed=.true.)
+      call trtri("u", "n", n, P, n, info)   ! Compute inv(R) from Chol. fact.
+   end if
+   !> Solve unconstrained problem.
+   call trmv("u", "t", "n", n, P, n, x, 1)  ! Multiply by inv(R).T
+   call trmv("u", "n", "n", n, P, n, x, 1)  ! Multiply by inv(R)
+   ierr = 0
+
+   !> Evaluate objective function at unconstrained solution.
+   obj = -0.5_dp*dot_product(x, work(:n))
 
    !-------------------------------------------------------------------------
    !-----     ACTIVE SET METHOD FOR SOLVING THE CONSTRAINED PROBLEM     -----
    !-------------------------------------------------------------------------
+
+   !> Calculate the norm of each column of the constraint matrix
+   work(iwnbv + 1:iwnbv + m) = norm(At, 2, dim=1)
 
    loop50: do
       !> Update iteration counter.
@@ -149,10 +137,10 @@ contains
       !> Verify all constraints.
       !>    - Check which are being violated.
       !>    - For equality ones, the normal vector may have to be negated, bvec also.
-      call copy(q, bvec, 1, residuals, 1)
-      call gemv("t", n, q, 1.0_dp, amat, n, sol, 1, -1.0_dp, residuals, 1)
+      call copy(m, b, 1, residuals, 1)
+      call gemv("t", n, m, 1.0_dp, At, n, x, 1, -1.0_dp, residuals, 1)
       l = iwsv
-      do i = 1, q
+      do i = 1, m
          l = l + 1
          sum = merge(residuals(i), 0.0_dp, abs(residuals(i)) > 0.0_dp)
          if (i > meq) then
@@ -160,8 +148,8 @@ contains
          else
             work(l) = -abs(sum)
             if (sum > 0.0_dp) then
-               call scal(n, -1.0_dp, amat(1:n, i), 1)
-               bvec(i) = -bvec(i)
+               call scal(n, -1.0_dp, At(:, i), 1)
+               b(i) = -b(i)
             end if
          end if
       end do
@@ -173,16 +161,18 @@ contains
       !>    - Each violation is weighted by the number of non-zero elements in
       !>      the corresponding row of A.
       !>    - Selected violated constraint is the one with maximal absolute value.
-      nvl = 0
-      temp = 0.0_dp
-      do i = 1, q
+      nvl = 0; temp = 0.0_dp
+      do i = 1, m
          if (work(iwsv + i) < temp*work(iwnbv + i)) then
             nvl = i
             temp = work(iwsv + i)/work(iwnbv + i)
          end if
       end do
+
+      !> If no constraint is being violated, we are optimal.
+      !> Return the vector of Lagrange multipliers and exit.
       if (nvl == 0) then
-         lagr(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
+         y(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
          return
       end if
 
@@ -193,27 +183,25 @@ contains
       loop55: do
          block700: block
 
-            call gemv("t", n, n, 1.0_dp, dmat(1:n, 1:n), n, amat(1:n, nvl), 1, &
-                      0.0_dp, work(1:n), 1)
+            call gemv("t", n, n, 1.0_dp, P, n, At(:, nvl), 1, 0.0_dp, work(:n), 1)
 
             !> Compute z = J_2 @ d_2
             l1 = iwzv
             work(l1 + 1:l1 + n) = 0.0_dp
-            call gemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, &
+            call gemv("n", n, n - nact, 1.0_dp, P(:, nact + 1:n), n, &
                       work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
-            t1inf = .true.
             call copy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
             call tpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), &
                       work(iwrv + 1:iwrv + nact), 1)
+            t1inf = .true.
             do i = 1, nact
                if (iact(i) <= meq) cycle
                if (work(iwrv + i) <= 0.0_dp) cycle
-               t1inf = .false.
-               it1 = i
+               t1inf = .false.; it1 = i
             end do
 
             !> If r has positive elements:
@@ -227,15 +215,14 @@ contains
                   if (work(iwrv + i) <= 0.0_dp) cycle
                   temp = work(iwuv + i)/work(iwrv + i)
                   if (temp < t1) then
-                     t1 = temp
-                     it1 = i
+                     t1 = temp; it1 = i
                   end if
                end do
             end if
 
             !> Test if the z vector is equal to zero.
             sum = norm(work(iwzv + 1:iwzv + n), 2)
-            if (sum <= vsmall) then
+            if (sum <= eps) then
                !> No step in primal space such that the new constraint becomes feasible.
                !>    -  Take step in dual space and drop a constraint.
                if (t1inf) then
@@ -254,16 +241,15 @@ contains
                !> Minimum step in primal space such that the constraint becomes feasible.
                !>    -  Full step length t2.
                !>    -  Keep sum = z.T @ n+ to update crval below.
-               sum = dot_product(work(iwzv + 1:iwzv + n), amat(1:n, nvl))
+               sum = dot_product(work(iwzv + 1:iwzv + n), At(:, nvl))
                tt = -work(iwsv + nvl)/sum
                t2min = .true.
                if ((.not. t1inf) .and. (t1 < tt)) then
-                  tt = t1
-                  t2min = .false.
+                  tt = t1; t2min = .false.
                end if
 
                !> Take step in primal and dual space.
-               call axpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
+               call axpy(n, tt, work(iwzv + 1:iwzv + n), 1, x, 1)
                obj = obj + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
                call axpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
                          work(iwuv + 1:iwuv + nact), 1)
@@ -310,7 +296,7 @@ contains
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
                         work(i - 1) = temp
-                        call rot(n, dmat(1:n, i - 1), 1, dmat(1:n, i), 1, gc, gs)
+                        call rot(n, P(:, i - 1), 1, P(:, i), 1, gc, gs)
                      end do
 
                      !> l is still pointing to element (nact,nact) of the matrix r.
@@ -323,16 +309,14 @@ contains
                   !>    -  Continue to step 2(a) (marked by label 55).
                   !> Since fit changed, we need to recalculate by "how much" the chosen
                   !> constraint is now violated.
-                  sum = -bvec(nvl) + dot_product(amat(1:n, nvl), sol(1:n))
-                  ! sum = residuals(i)
+                  sum = dot_product(At(:, nvl), x) - b(nvl)
                   if (nvl > meq) then
                      work(iwsv + nvl) = sum
                   else
                      work(iwsv + nvl) = -abs(sum)
                      if (sum > 0.0_dp) then
-                        call scal(n, -1.0_dp, amat(1:n, nvl), 1)
-                        bvec(nvl) = -bvec(nvl)
-                        ! residuals(nvl) = -residuals(nvl)
+                        call scal(n, -1.0_dp, At(:, nvl), 1)
+                        b(nvl) = -b(nvl)
                      end if
                   end if
                   exit block700
@@ -376,7 +360,7 @@ contains
                            work(l1) = temp
                            l1 = l1 + i
                         end do
-                        call swap(n, dmat(:, it1), 1, dmat(:, it1 + 1), 1)
+                        call swap(n, P(:, it1), 1, P(:, it1 + 1), 1)
                      else
                         do i = it1 + 1, nact
                            temp = gc*work(l1 - 1) + gs*work(l1)
@@ -384,7 +368,7 @@ contains
                            work(l1 - 1) = temp
                            l1 = l1 + i
                         end do
-                        call rot(n, dmat(1:n, it1), 1, dmat(1:n, it1 + 1), 1, gc, gs)
+                        call rot(n, P(:, it1), 1, P(:, it1 + 1), 1, gc, gs)
                      end if
                      ! shift column (it1+1) of r to column (it1) (that is, the first it1
                      ! elements). the posit1on of element (1,it1+1) of r was calculated above
@@ -503,19 +487,14 @@ contains
    !------------------------------------------------------------
    if (ierr == 0) then
       !> Matrix has not been factorized yet.
-      call cholesky(dmat(:n, :n), lower=.false., other_zeroed=.true., err=err)
-      if (err%error()) then
-         ierr = 2; return
-      end if
-      call cho_solve(dmat(:n, :n), dvec(:n))
+      call cholesky(dmat(:n, :n), lower=.false., other_zeroed=.true.)
       call trtri("u", "n", n, dmat, n, info) ! Compute inv(R) from Chol. fact.
-   else
-      !> Matrix has already been pre-factorized by calling dpofa and dpori.
-      !> Multiply by inv(R).T
-      call trmv("u", "t", "n", n, dmat, n, dvec, 1)
-      !> Multiply by inv(R).
-      call trmv("u", "n", "n", n, dmat, n, dvec, 1)
    end if
+   !> Matrix has already been pre-factorized by calling dpofa and dpori.
+   !> Multiply by inv(R).T
+   call trmv("u", "t", "n", n, dmat, n, dvec, 1)
+   !> Multiply by inv(R).
+   call trmv("u", "n", "n", n, dmat, n, dvec, 1)
 
    !> Book-keeping:
    !>    - set lower triangular part of dmat to zero,

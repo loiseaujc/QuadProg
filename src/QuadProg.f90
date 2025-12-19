@@ -6,6 +6,7 @@ module QuadProg
    use stdlib_linalg_lapack, only: trtri, potrs, lartg, &
                                    geqrf, orgqr
    use stdlib_intrinsics, only: dot_product => stdlib_dot_product
+   use assert_m, only: assert => assert_always
    implicit none
    private
 
@@ -121,11 +122,9 @@ module QuadProg
          !! Cost function at the optimum.
       end subroutine qpgen1
 
-      module subroutine qpgen2(dmat, dvec, sol, lagr, obj, amat, bvec, q, &
-                               meq, iact, nact, iter, work, ierr)
+      module subroutine qpgen2(P, q, At, b, meq, x, y, obj, &
+                               iact, nact, iter, work, ierr)
          implicit none
-         integer, intent(in)     :: q
-         !! Dimensions of the constraint matrix Amat
          integer, intent(in)     :: meq
          !! Number of equality constraints.
          integer, intent(out)    :: iact(:), nact
@@ -134,11 +133,11 @@ module QuadProg
          !! Number of iterations.
          integer, intent(inout)  :: ierr
          !! Information flag.
-         real(dp), intent(inout) :: dmat(:, :), dvec(:)
+         real(dp), intent(inout) :: P(:, :), q(:)
          !! Sym. pos. def. matrix and vector defining the quadratic cost.
-         real(dp), intent(out)   :: lagr(:), sol(:)
+         real(dp), intent(out)   :: y(:), x(:)
          !! Lagrange multipliers and solution vector.
-         real(dp), intent(inout) :: amat(:, :), bvec(:)
+         real(dp), intent(inout) :: At(:, :), b(:)
          !! Matrix and vector defining the (in-)equality constraints.
          real(dp), intent(inout) :: work(:)
          !! Workspace.
@@ -169,18 +168,6 @@ module QuadProg
       end function bvls
    end interface
 
-   !---------------------------------------------------------------
-   !-----     INTERFACES FOR THE LINALG UTILITY FUNCTIONS     -----
-   !---------------------------------------------------------------
-
-   interface
-      module subroutine cho_solve(A, b)
-         implicit none
-         real(dp), intent(in) :: A(:, :)
-         real(dp), target, intent(inout) :: b(:)
-      end subroutine cho_solve
-   end interface
-
 contains
 
    !---------------------------------------
@@ -195,13 +182,14 @@ contains
       real(dp), optional, intent(in) :: A(:, :), b(:)
       real(dp), optional, intent(in) :: C(:, :), d(:)
       integer :: info, n
-      type(linalg_state_type) :: err
 
       prob%neq = 0; prob%ncons = 0
 
       !> Sanity checks for the quadratic form.
-      if (size(P, 1) /= size(P, 2)) error stop "Matrix P is not square."
-      if (size(P, 1) /= size(q)) error stop "Matrix P and vector q have incompatible dimensions."
+      call assert(assertion=size(P, 1) == size(P, 2), &
+                  description="Matrix P is not square.")
+      call assert(assertion=size(P, 1) == size(q), &
+                  description="Matrix P and vector q have incompatible dimensions.")
 
       !> Quadratic cost.
       prob%P = P; prob%q = q; n = size(P, 1)
@@ -211,20 +199,26 @@ contains
       call trtri("u", "n", n, prob%P, n, info)
 
       !> Sanity checks for the equality constraints.
-      if (present(A) .and. .not. present(b)) error stop "Right-hand side vector b for the equality constraints is missing."
-      if (.not. present(A) .and. present(b)) error stop "Matrix A for the equality constraints is missing."
+      call assert(assertion=(present(A) .and. present(b)) .or. (.not. present(A) .and. .not. present(b)), &
+                  description="Equality constraints are mis-specified (A or b is missing).")
+
       if (present(A) .and. present(b)) then
-         if (size(P, 2) /= size(A, 2)) error stop "Matrices P and A have incompatible number of columns."
-         if (size(A, 1) /= size(b)) error stop "Matrix A and vector b have incompatible dimensions."
+         call assert(assertion=size(P, 2) == size(A, 2), &
+                     description="Matrices P and A have incompatible number of columns.")
+         call assert(assertion=size(A, 1) == size(b), &
+                     description="Matrix A and vector b have incompatible dimensions.")
          prob%A = A; prob%b = b; prob%neq = size(b); prob%ncons = size(b)
       end if
 
       !> Sanity checks for the inequality constraints.
-      if (present(C) .and. .not. present(d)) error stop "Right-hand side vector d for the inequality constraints is missing."
-      if (.not. present(C) .and. present(d)) error stop "Matrix C for the inequality constraints is missing."
+      call assert(assertion=(present(C) .and. present(d)) .or. (.not. present(C) .and. .not. present(d)), &
+                  description="Inequality constraints are mis-specified (C or d is missing).")
+
       if (present(C) .and. present(d)) then
-         if (size(P, 2) /= size(C, 2)) error stop "Matrices P and C have incompatible number of columns."
-         if (size(C, 1) /= size(d)) error stop "Matrix C and vector d have incompatible dimensions."
+         call assert(assertion=size(P, 2) == size(C, 2), &
+                     description="Matrices P and C have incompatible number of columns.")
+         call assert(assertion=size(C, 1) == size(d), &
+                     description="Matrix C and vector d have incompatible dimensions.")
          prob%C = C; prob%d = d; prob%ncons = prob%neq + size(d)
       end if
 
@@ -281,19 +275,27 @@ contains
       !> Allocate data.
       allocate (iact(ncons))
       allocate (P, source=problem%P); allocate (q, source=problem%q)
-      allocate (result%x, mold=q); result%x = 0.0_dp
+      allocate (result%x(n), source=q)
       allocate (result%y(ncons), source=0.0_dp)
-      !> Allocate workspace
-      r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-      allocate (work(lwork), source=0.0_dp)
-      !> Get the constraints matrix and vector.
-      call get_constraints_matrix(problem, G, h)
-      !> Solve the QP problem.
-      info = 1 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, result%x, result%y, result%obj, G, h, &
-                  ncons, neq, iact, nact, iter, work, info)
-      !> Success?
-      result%success = (info == 0)
+
+      if (ncons == 0) then
+         !> Solve unconstrained problem.
+         call trmv("u", "t", "n", n, P, n, result%x, 1)  ! Multiply by inv(R).T
+         call trmv("u", "n", "n", n, P, n, result%x, 1)  ! Multiply by inv(R)
+         result%success = .true.
+      else
+         !> Allocate workspace
+         r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
+         allocate (work(lwork), source=0.0_dp)
+         !> Get the constraints matrix and vector.
+         call get_constraints_matrix(problem, G, h)
+         !> Solve the QP problem.
+         info = 1 ! P is already factorized when defining the QP.
+         call qpgen2(P, q, G, h, neq, result%x, result%y, result%obj, &
+                     iact, nact, iter, work, info)
+         !> Success?
+         result%success = (info == 0)
+      end if
       return
    end function solve_standard_qp
 
