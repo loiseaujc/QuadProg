@@ -1,0 +1,298 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="description" content="Modern Fortran implementation of quadprog for convex quadratic programming.">
+    <meta name="author" content="Jean-Christophe Loiseau" >
+    <link rel="icon" href="./favicon.png">
+
+    <title> QuadProg </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="./css/fontawesome.min.css" rel="stylesheet">
+    <link href="./css/brands.min.css" rel="stylesheet">
+    <link href="./css/regular.min.css" rel="stylesheet">
+    <link href="./css/solid.min.css" rel="stylesheet">
+    <link href="./css/v4-font-face.min.css" rel="stylesheet">
+    <link href="./css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="./css/local.css" rel="stylesheet">
+    <link href="./css/pygments.css" rel="stylesheet">
+      <link href="./css/user.css" rel="stylesheet">
+    <script src="./js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="./index.html">QuadProg </a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+                <li class="nav-item"><a class="nav-link" href="page/index.html">Overview</a></li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="./lists/files.html">Source Files</a>
+                  </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="./lists/modules.html">Modules</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="./lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="./lists/types.html">Derived Types</a>
+                </li>
+            </ul>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="./search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+  <!-- Main component for a primary marketing message or call to action -->
+    <div class="p-5 mb-4 bg-light border rounded-3" id="jumbotron">
+      <p>Modern Fortran implementation of quadprog for convex quadratic programming.</p>
+        <p> Find us on&hellip;</p>
+      <p>
+        <a class="btn btn-lg btn-primary" href="https://github.com/loiseaujc/QuadProg" role="button">GitHub</a>
+        
+        
+        
+        <a class="btn btn-lg btn-primary" href="https://loiseaujc.github.io/QuadProg/" role="button">The Web</a>
+      </p>
+    </div>
+
+      <div class="row" id='text'>
+        <div class=col-md-8>
+          <h1>QuadProg</h1>
+          <div class="alert alert-warning">
+<p class="alert-title h4">Warning</p>
+<p>This API documentation for the <code>Modern QuadProg</code> pacakge is a work in progress.
+   It is build from the source code in the <code>main</code> branch and does not track the current development in <code>dev</code> or any other branches.
+   If you use another branch, please refer to the in-code documentation.
+   Use the navigation bar at the top of the screen to browse <code>modules</code>, <code>procedures</code>, <code>source files</code>, etc.
+   The listings near the bootom of the page are incomplete.</p>
+</div>
+<p>This is the main API documentation landing page generated by <a href="https://github.com/Fortran-FOSS-Programmers/ford#readme">FORD</a>. This documentation is released under the <a href="https://creativecommons.org/licenses/by-sa/4.0/"><code>CC-BY-SA</code></a> license while the <code>Modern QuadProg</code> source code is distribution under the <a href="https://opensource.org/license/bsd-3-clause"><code>BSD-3 Clause</code></a> one.</p>
+<h3 id="description">Description</h3>
+<p>This is an updated version of the <code>quadprog</code> solver initially written by Berwin A. Turlach in Fortran 77. It can be used to solve strictly convex quadratic programs of the form</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\mathrm{minimize}   &   \quad   \dfrac12 \mathbf{x}^\top \mathbf{Px} - \mathbf{x}^\top \mathbf{q} \\
+\mathrm{subject~to} &   \quad   \mathbf{Ax} = \mathbf{b}    \\
+                    &   \quad   \mathbf{Cx} \geq \mathbf{d}.
+\end{aligned}
+</script>
+</p>
+<p>using an <a href="https://en.wikipedia.org/wiki/Active-set_method">active set method</a>. It is most efficient for small to moderate sized QP described using dense matrices.</p>
+<p><strong>Updates to the original code include:</strong></p>
+<ul>
+<li>Sources have been translated from FORTRAN 77 fixed-form to Fortran 90 free-form.</li>
+<li>All obsolescent features (<code>goto</code>, etc) have been removed. It is now 100% standard compliant (Fortran 2018).</li>
+<li>It makes use of derived-type and easy to use interfaces. The <code>qp_problem</code> class is used to defined the quadratic program and <code>solve</code> to compute its solution.</li>
+<li>Calls to <code>blas</code> functions and subroutines now replace some hand-crafted implementations for improved performances.</li>
+<li>Calls to <code>lapack</code> subroutines now replace the original functionalities provided by <a href="https://www.netlib.org/linpack/"><code>linpack</code></a>.</li>
+<li>Utility solvers for non-negative least-squares (<code>nnls</code>) and bounded-variables least-squares (<code>bvls</code>) are provided.</li>
+</ul>
+<h3 id="building-quadprog">Building QuadProg</h3>
+<h4 id="fortran-package-manager">Fortran Package Manager</h4>
+<p>The library can be built with the <a href="https://github.com/fortran-lang/fpm">Fortran Package Manager</a> <code>fpm</code> using the provided <code>fpm.toml</code> file like so:</p>
+<div class="codehilite"><pre><span></span><code>fpm<span class="w"> </span>build<span class="w"> </span>--release
+</code></pre></div>
+
+<p>Only double precision (<code>real64</code>) is currently supported.</p>
+<p>To use <code>QuadProg</code> within your <code>fpm</code> project, add the following to your <code>fpm.toml</code> file:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[dependencies]</span>
+<span class="n">QuadProg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">git</span><span class="p">=</span><span class="s2">&quot;https://github.com/loiseaujc/QuadProg.git&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<h3 id="example">Example</h3>
+<p>The following program solves the QP</p>
+<p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+\mathrm{minimize}   &   \quad   \dfrac12 \left( x_1^2 + x_2^2 + x_3^2 \right) - 5 x_2   \\
+\mathrm{subject~to} &   \quad   -4x_1 + 2x_2 \geq -8    \\
+                    &   \quad   -3x_1 + x_2 - 2x_3 \geq -2  \\
+                    &   \quad   x_3 \geq 0.
+\end{aligned}
+</script>
+</p>
+<div class="codehilite"><pre><span></span><code><span class="k">program </span><span class="n">example</span>
+<span class="w">    </span><span class="k">use </span><span class="n">quadprog</span>
+<span class="w">    </span><span class="k">implicit none</span>
+<span class="k">    </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">dp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">selected_real_kind</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="mi">307</span><span class="p">)</span>
+<span class="w">    </span><span class="c">! Size of the problem.</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">,</span><span class="w"> </span><span class="k">parameter</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">    </span><span class="c">! Quadratic cost.</span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">P</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">q</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="w">    </span><span class="c">! Inequality constraints.</span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">C</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">d</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="w">    </span><span class="c">! Convenience types.</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">qp_problem</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">prob</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">OptimizeResult</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">solution</span>
+<span class="w">    </span><span class="c">! Miscellaneous</span>
+<span class="w">    </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span>
+
+<span class="w">    </span><span class="c">!&gt; Setup the quadratic function..</span>
+<span class="w">    </span><span class="n">P</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">0.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">5.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">]</span>
+<span class="w">    </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">n</span>
+<span class="w">        </span><span class="n">P</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0_dp</span>
+<span class="w">    </span><span class="k">enddo</span>
+
+<span class="w">    </span><span class="c">!&gt; Setup the inequality constraints.</span>
+<span class="w">    </span><span class="n">C</span><span class="p">(:,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="o">-</span><span class="mf">4.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">]</span>
+<span class="w">    </span><span class="n">C</span><span class="p">(:,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="o">-</span><span class="mf">3.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">2.0_dp</span><span class="p">]</span>
+<span class="w">    </span><span class="n">C</span><span class="p">(:,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mf">0.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">1.0_dp</span><span class="p">]</span>
+<span class="w">    </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="o">-</span><span class="mf">8.0_dp</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mf">2.0_dp</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0_dp</span><span class="p">]</span>
+
+<span class="w">    </span><span class="c">!&gt; Solve the inequality constrained QP.</span>
+<span class="w">    </span><span class="n">prob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qp_problem</span><span class="p">(</span><span class="n">P</span><span class="p">,</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">C</span><span class="o">=</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="o">=</span><span class="n">d</span><span class="p">)</span>
+<span class="w">    </span><span class="n">solution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">solve</span><span class="p">(</span><span class="n">prob</span><span class="p">)</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">solution</span><span class="p">%</span><span class="n">success</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="k">        print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;x   =&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">solution</span><span class="p">%</span><span class="n">x</span><span class="w"> </span><span class="c">! Solution of the QP.</span>
+<span class="w">        </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;y   =&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">solution</span><span class="p">%</span><span class="n">y</span><span class="w"> </span><span class="c">! Lagrange multipliers.</span>
+<span class="w">        </span><span class="k">print</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;obj =&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">solution</span><span class="p">%</span><span class="n">obj</span><span class="w"> </span><span class="c">! Objective function.</span>
+<span class="w">    </span><span class="k">endif</span>
+<span class="k">end program</span>
+</code></pre></div>
+
+<h3 id="licence">Licence</h3>
+<ul>
+<li>The original source code was released under the <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html">GNU General Public Licence version 2</a> (GPL-2).</li>
+</ul>
+<h3 id="development">Development</h3>
+<ul>
+<li>Development continues on <a href="https://github.com/loiseaujc/QuadProg">Github</a>.</li>
+</ul>
+<h3 id="similar-projects">Similar projects</h3>
+<ul>
+<li><a href="https://github.com/albertosantini/quadprog"><code>quadprog</code></a>, an equivalent project written in JavaScript.</li>
+<li><a href="https://docs.rs/quadprog/latest/quadprog/"><code>quadprog</code></a>, an equivalent project written in Rust.</li>
+<li><a href="https://rdrr.io/cran/quadprog/"><code>quadprog</code></a>, some R bindings to the original <code>quadprog</code> solver.</li>
+<li><a href="https://github.com/fabienlefloch/GoldfarbIdnaniSolver.jl"><code>GoldfarbIdnaniSolver.jl</code></a>, a port of the original <code>quadprog</code> code in Julia.</li>
+</ul>
+<h3 id="references">References</h3>
+<ul>
+<li>D. Goldfarb and A. Idnani (1983). A numerically stable dual method for solving strictly convex quadratic programs. Mathematical Programming, 27, 1-33.</li>
+</ul>
+        </div>
+          <div class="col-md-4">
+            <div class="card card-body bg-light">
+              <h2 class="card-title">Developer Info</h2>
+              <h4 class="card-text">Jean-Christophe Loiseau</h4>
+              <p class="card-text"></p>
+                <div class="text-center"><div class="btn-group" role="group">
+                    
+                    <a class="btn btn-lg btn-primary" href="https://github.com/loiseaujc/QuadProg"><i class="fa fa-github fa-lg"></i></a>
+                    
+                    
+                    
+                    
+                    
+                    
+                </div></div>
+            </div>
+          </div>
+      </div>
+        <div class="row">
+          <hr>
+          <div class="col-xs-6 col-sm-3">
+            <div>
+              <h3>Source Files</h3>
+              <ul><li><a href='sourcefile/constants.f90.html'>constants.f90</a></li><li><a href='sourcefile/drivers.f90.html'>drivers.f90</a></li><li><a href='sourcefile/lstsq_variants.f90.html'>lstsq_variants.f90</a></li><li><a href='sourcefile/quadprog.f90.html'>QuadProg.f90</a></li></ul>
+            </div>
+            <div>
+              <ul>
+                <li><a href="./lists/files.html"><em>All source files&hellip;</em></a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-xs-6 col-sm-3">
+            <div>
+              <h3>Modules</h3>
+              <ul><li><a href='module/quadprog.html'>QuadProg</a></li><li><a href='module/quadprog_constants.html'>quadprog_constants</a></li></ul>
+            </div>
+            <div>
+              <ul>
+                <li><a href="./lists/modules.html"><em>All modules&hellip;</em></a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-xs-6 col-sm-3">
+            <div>
+              <h3>Procedures</h3>
+              <ul><li><a href='interface/bvls.html'>bvls</a></li><li><a href='interface/compact_qp_problem.html'>compact_qp_problem</a></li><li><a href='interface/nnls.html'>nnls</a></li><li><a href='interface/qp_problem.html'>qp_problem</a></li><li><a href='interface/solve.html'>solve</a></li></ul>
+            </div>
+            <div>
+              <ul>
+                <li><a href="./lists/procedures.html"><em>All procedures&hellip;</em></a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-xs-6 col-sm-3">
+            <div>
+              <h3>Derived Types</h3>
+              <ul><li><a href='type/compact_qp_problem.html'>compact_qp_problem</a></li><li><a href='type/optimizeresult.html'>OptimizeResult</a></li><li><a href='type/qp_problem.html'>qp_problem</a></li></ul>
+            </div>
+            <div>
+              <ul>
+                <li><a href="./lists/types.html"><em>All derived types&hellip;</em></a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              QuadProg
+ was developed by Jean-Christophe Loiseau<br>              &copy; 2025 <a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>
+</p>
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+            </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>
