@@ -222,13 +222,68 @@ module QuadProg
    !------------------------------------------------------------------------
 
    interface
+      !!    ### Description
+      !!
+      !!    Solve the non-negative least-squares problem
+      !!
+      !!    \[
+      !!        \begin{aligned}
+      !!            \mathrm{minimize}   &   \quad   \| Ax - b \|_2^2 \\
+      !!            \mathrm{subject~to} &   \quad   x \geq 0.
+      !!        \end{aligned}
+      !!    \]
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        x = nnls(A, b)
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `A`   :   Matrix of size `m x n`, with `m >= n`. It is an `intent(in)` argument.
+      !!
+      !!    - `b`   :   Rank-1 array of size `m`. It is an `intent(in)` argument.
+      !!
+      !!    - `x`   :   Rank-1 array of size `n` returned by the function. It contains the
+      !!                non-negative coefficients of the least-squares fit.
       module function nnls(A, b) result(x)
          implicit none
          real(dp), intent(inout)        :: A(:, :)
          real(dp), intent(in)           :: b(:)
          real(dp), allocatable          :: x(:)
       end function nnls
+   end interface
 
+   interface
+      !!    ### Description
+      !!
+      !!    Solve the bounded least-squares problem
+      !!
+      !!    \[
+      !!        \begin{aligned}
+      !!            \mathrm{minimize}   &   \quad   \| A x - b \|_2^2 \\
+      !!            \mathrm{subject~to} &   \quad   l \leq x \leq u
+      !!        \end{aligned}
+      !!    \]
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        call bvls(A, b [, ub] [, lb])
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `A`   :   Matrix of size `m x n` with `m >= n`. It is an `intent(in)` argument.
+      !!
+      !!    - `b`   :   Rank-1 array of size `m`. It is an `intent(in)` argument.
+      !!
+      !!    - `lb` (optional)   :   Rank-1 array of size `n` defining the lower bounds for the
+      !!                            solution of the problem. It is an `intent(in)` argument.
+      !!
+      !!    - `ub` (optional)   :   Rank-1 array of size `n` defining the upper bounds for the
+      !!                            solution of the problem. It is an `intent(in)` argument.
       module function bvls(A, b, ub, lb) result(x)
          implicit none
          real(dp), intent(inout)        :: A(:, :)
