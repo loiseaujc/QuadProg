@@ -79,6 +79,29 @@ module QuadProg
    !---------------------------------------------------
 
    interface solve
+      !!    ### Description
+      !!
+      !!    Solve a strictly convex quadratic program of the form
+      !!
+      !!    \[
+      !!        \begin{aligned}
+      !!            \mathrm{minimize}   &   \quad   \dfrac12 x^\top P x - x^\top q \\
+      !!            \mathrm{subject~to} &   \quad   Ax = b \\
+      !!                                &   \quad   Cx \geq d
+      !!        \end{aligned}
+      !!    \]
+      !!
+      !!    using an active set method.
+      !!
+      !!    **References**
+      !!
+      !!    - ??
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        result = solve(problem)
+      !!    ```
       module type(OptimizeResult) function solve_standard_qp(problem) result(result)
          implicit none
          type(qp_problem), intent(in) :: problem
