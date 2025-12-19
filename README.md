@@ -17,7 +17,7 @@ This is an updated version of the `quadprog` solver initially written by Berwin 
 
 $$
 \begin{aligned}
-\mathrm{minimize}   &   \quad   \dfrac12 \mathbf{x}^T \mathbf{Px} - \mathbf{x}^T \mathbf{q} \\
+\mathrm{minimize}   &   \quad   \dfrac12 \mathbf{x}^\top \mathbf{Px} - \mathbf{x}^\top \mathbf{q} \\
 \mathrm{subject~to} &   \quad   \mathbf{Ax} = \mathbf{b}    \\
                     &   \quad   \mathbf{Cx} \geq \mathbf{d}.
 \end{aligned}
@@ -52,10 +52,6 @@ To use `QuadProg` within your `fpm` project, add the following to your `fpm.toml
 [dependencies]
 QuadProg = { git="https://github.com/loiseaujc/QuadProg.git"}
 ```
-
-### Dependencies
-
-The library requires some [`blas`](https://netlib.org/blas/) and [`lapack`](https://www.netlib.org/lapack/) routines which are not included. You thus need to have it available on your system, otherwise it'll automatically pull them from the fortran standard library [`stdlib`](https://github.com/fortran-lang/stdlib).
 
 ### Example
 
@@ -97,7 +93,7 @@ program example
     C(:, 1) = [-4.0_dp, 2.0_dp, 0.0_dp]
     C(:, 2) = [-3.0_dp, 1.0_dp, -2.0_dp]
     C(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp]
-    d = [-8.0_dp, 2.0_dp, 0.0_dp]
+    d = [-8.0_dp, -2.0_dp, 0.0_dp]
 
     !> Solve the inequality constrained QP.
     prob = qp_problem(P, q, C=C, d=d)

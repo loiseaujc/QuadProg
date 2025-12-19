@@ -38,7 +38,7 @@ This is an updated version of the `quadprog` solver initially written by Berwin 
 
 $$
 \begin{aligned}
-\mathrm{minimize}   &   \quad   \dfrac12 \mathbf{x}^T \mathbf{Px} - \mathbf{x}^T \mathbf{q} \\
+\mathrm{minimize}   &   \quad   \dfrac12 \mathbf{x}^\top \mathbf{Px} - \mathbf{x}^\top \mathbf{q} \\
 \mathrm{subject~to} &   \quad   \mathbf{Ax} = \mathbf{b}    \\
                     &   \quad   \mathbf{Cx} \geq \mathbf{d}.
 \end{aligned}
@@ -47,6 +47,7 @@ $$
 using an [active set method](https://en.wikipedia.org/wiki/Active-set_method). It is most efficient for small to moderate sized QP described using dense matrices.
 
 **Updates to the original code include:**
+
  - Sources have been translated from FORTRAN 77 fixed-form to Fortran 90 free-form.
  - All obsolescent features (`goto`, etc) have been removed. It is now 100% standard compliant (Fortran 2018).
  - It makes use of derived-type and easy to use interfaces. The `qp_problem` class is used to defined the quadratic program and `solve` to compute its solution.
@@ -73,10 +74,6 @@ To use `QuadProg` within your `fpm` project, add the following to your `fpm.toml
 [dependencies]
 QuadProg = { git="https://github.com/loiseaujc/QuadProg.git"}
 ```
-
-### Dependencies
-
-The library requires some [`blas`](https://netlib.org/blas/) and [`lapack`](https://www.netlib.org/lapack/) routines which are not included. You thus need to have it available on your system, otherwise it'll automatically pull them from the fortran standard library [`stdlib`](https://github.com/fortran-lang/stdlib).
 
 ### Example
 
@@ -118,7 +115,7 @@ program example
     C(:, 1) = [-4.0_dp, 2.0_dp, 0.0_dp]
     C(:, 2) = [-3.0_dp, 1.0_dp, -2.0_dp]
     C(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp]
-    d = [-8.0_dp, 2.0_dp, 0.0_dp]
+    d = [-8.0_dp, -2.0_dp, 0.0_dp]
 
     !> Solve the inequality constrained QP.
     prob = qp_problem(P, q, C=C, d=d)
