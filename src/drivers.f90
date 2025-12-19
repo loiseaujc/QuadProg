@@ -136,7 +136,7 @@ contains
 
       !> Verify all constraints.
       !>    - Check which are being violated.
-      !>    - For equality ones, the normal vector may have to be negated, bvec also.
+      !>    - For equality ones, the normal vector may have to be negated, b also.
       call copy(m, b, 1, residuals, 1)
       call gemv("t", n, m, 1.0_dp, At, n, x, 1, -1.0_dp, residuals, 1)
       l = iwsv
@@ -164,8 +164,7 @@ contains
       nvl = 0; temp = 0.0_dp
       do i = 1, m
          if (work(iwsv + i) < temp*work(iwnbv + i)) then
-            nvl = i
-            temp = work(iwsv + i)/work(iwnbv + i)
+            nvl = i; temp = work(iwsv + i)/work(iwnbv + i)
          end if
       end do
 
@@ -178,7 +177,7 @@ contains
 
       !> Compute d = J.T @ n+
       !>    -  n+ is the normal vector of the violated constraint.
-      !>    -  J is stored in dmat in this implementation.
+      !>    -  J is stored in P in this implementation.
       !>    -  If a constraint is dropped, we come back here.
       loop55: do
          block700: block
@@ -186,8 +185,7 @@ contains
             call gemv("t", n, n, 1.0_dp, P, n, At(:, nvl), 1, 0.0_dp, work(:n), 1)
 
             !> Compute z = J_2 @ d_2
-            l1 = iwzv
-            work(l1 + 1:l1 + n) = 0.0_dp
+            l1 = iwzv; work(l1 + 1:l1 + n) = 0.0_dp
             call gemv("n", n, n - nact, 1.0_dp, P(:, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
@@ -237,10 +235,9 @@ contains
             else
                !> Minimum step in primal space such that the constraint becomes feasible.
                !>    -  Full step length t2.
-               !>    -  Keep sum = z.T @ n+ to update crval below.
+               !>    -  Keep sum = z.T @ n+ to update obj below.
                sum = dot_product(work(iwzv + 1:iwzv + n), At(:, nvl))
-               tt = -work(iwsv + nvl)/sum
-               t2min = .true.
+               tt = -work(iwsv + nvl)/sum; t2min = .true.
                if ((.not. t1inf) .and. (t1 < tt)) then
                   tt = t1; t2min = .false.
                end if
@@ -258,15 +255,13 @@ contains
                   !> Full step was performed.
                   !>    -  Add constraint nvl to the list of active constraints.
                   !>    -  Update J and r.
-                  nact = nact + 1
-                  iact(nact) = nvl
+                  nact = nact + 1; iact(nact) = nvl
                   !> To update r:
                   !>    -  Put the first nact-1 components of the d vector into column
                   !>       nact of r.
                   l = iwrm + ((nact - 1)*nact)/2 + 1
                   do i = 1, nact - 1
-                     work(l) = work(i)
-                     l = l + 1
+                     work(l) = work(i); l = l + 1
                   end do
 
                   !> If nact = n:
