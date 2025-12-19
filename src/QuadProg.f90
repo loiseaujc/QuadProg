@@ -102,6 +102,9 @@ module QuadProg
       !!    ```fortran
       !!        result = solve(problem)
       !!    ```
+      !!
+      !!    ### Arguments
+      !!
       module type(OptimizeResult) function solve_standard_qp(problem) result(result)
          implicit none
          type(qp_problem), intent(in) :: problem
