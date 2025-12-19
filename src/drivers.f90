@@ -15,7 +15,6 @@
 !  foundation, inc., 59 temple place - suite 330, boston, ma 02111-1307,
 !  usa.
 submodule(quadprog) modernized_drivers
-   use quadprog_constants, only: dp
    implicit none
 contains
 !  this routine uses the goldfarb/idnani algorithm to solve the
@@ -81,48 +80,22 @@ contains
 !        where r=min(n,q)
 
    module procedure qpgen2
-   integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
-   real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
+   integer  :: m, n
+   integer  :: i, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
+   real(dp) :: temp, sum, t1, tt, gc, gs, eps
    logical  :: t1inf, t2min
-   real(dp) :: dnrm2, ddot, residuals(q)
+   real(dp) :: residuals(size(At, 2))
+   type(linalg_state_type) :: err
 
-   r = min(n, q); l = 2*n + (r*(r + 5))/2 + 2*q + 1   ! Workspace size.
-   vsmall = epsilon(1.0_dp)                           ! Machine precision.
+   !----------------------------------
+   !-----     INITIALIZATION     -----
+   !----------------------------------
 
-   !> Store the initial dvec and initialize some arrays.
-   call dcopy(n, dvec(1:n), 1, work(1:n), 1)
-   work(n + 1:l) = 0.0_dp; iact(1:q) = 0; lagr(1:q) = 0.0_dp
-
-   !------------------------------------------------------------
-   !-----     SOLVE UNCONSTRAINED QP AS STARTING POINT     -----
-   !------------------------------------------------------------
-
-   if (ierr == 0) then
-      !> Matrix has not been factorized yet.
-      call dpotrf("u", fddmat, dmat, n, info)   ! Cholesky factorization.
-      if (info /= 0) then
-         ierr = 2; return
-      end if
-      call dpotrs("u", fddmat, 1, dmat, n, dvec, n, info)   ! Solve Ax = b using Chol. fact.
-      call dtrtri("u", "n", fddmat, dmat, n, info) ! Compute inv(R) from Chol. fact.
-   else
-      !> Matrix has already been pre-factorized by calling dpofa and dpori.
-      !> Multiply by inv(R).T
-      call dtrmv("u", "t", "n", n, dmat, n, dvec, 1)
-      !> Multiply by inv(R).
-      call dtrmv("u", "n", "n", n, dmat, n, dvec, 1)
-   end if
-
-   !> Book-keeping:
-   !>    - set low triangular part of dmat to zero,
-   !>    - store dvec in sol,
-   !>    - calculate value of the criterion at unconstrained minima.
-   do concurrent(i=1:n, j=1:n, i > j)
-      dmat(i, j) = 0.0_dp
-   end do
-   call dcopy(n, dvec(1:n), 1, sol(1:n), 1)
-   crval = -0.5_dp*ddot(n, sol(1:n), 1, work(1:n), 1)
-   ierr = 0
+   n = size(P, 1); m = size(At, 2); r = min(n, m)   ! Various dimensions.
+   eps = epsilon(1.0_dp)            ! Machine precision.
+   call copy(n, q, 1, work(:n), 1)  ! Store linear component of the objective function.
+   call copy(n, q, 1, x, 1)         ! Copy into the solution array (in-place computations).
+   work(n + 1:) = 0.0_dp; iact = 0; y = 0.0_dp; nact = 0; iter = 0
 
    !> Calculate some constants, i.e., from which index on the different
    !> quantities are stored in the work matrix
@@ -131,17 +104,31 @@ contains
    iwuv = iwrv + r
    iwrm = iwuv + r + 1
    iwsv = iwrm + (r*(r + 1))/2
-   iwnbv = iwsv + q
+   iwnbv = iwsv + m
 
-   !> Calculate the norm of each column of the constraint matrix
-   do i = 1, q
-      work(iwnbv + i) = dnrm2(n, amat(1:n, i), 1)
-   end do
-   nact = 0; iter(1) = 0; iter(2) = 0
+   !------------------------------------------------------------
+   !-----     SOLVE UNCONSTRAINED QP AS STARTING POINT     -----
+   !------------------------------------------------------------
+
+   if (ierr == 0) then
+      !> Matrix has not been factorized yet.
+      call cholesky(P, lower=.false., other_zeroed=.true.)
+      call trtri("u", "n", n, P, n, info)   ! Compute inv(R) from Chol. fact.
+   end if
+   !> Solve unconstrained problem.
+   call trmv("u", "t", "n", n, P, n, x, 1)  ! Multiply by inv(R).T
+   call trmv("u", "n", "n", n, P, n, x, 1)  ! Multiply by inv(R)
+   ierr = 0
+
+   !> Evaluate objective function at unconstrained solution.
+   obj = -0.5_dp*dot_product(x, work(:n))
 
    !-------------------------------------------------------------------------
    !-----     ACTIVE SET METHOD FOR SOLVING THE CONSTRAINED PROBLEM     -----
    !-------------------------------------------------------------------------
+
+   !> Calculate the norm of each column of the constraint matrix
+   work(iwnbv + 1:iwnbv + m) = norm(At, 2, dim=1)
 
    loop50: do
       !> Update iteration counter.
@@ -149,21 +136,20 @@ contains
 
       !> Verify all constraints.
       !>    - Check which are being violated.
-      !>    - For equality ones, the normal vector may have to be negated, bvec also.
-      call dcopy(q, bvec, 1, residuals, 1)
-      call dgemv("t", n, q, 1.0_dp, amat, n, sol, 1, -1.0_dp, residuals, 1)
+      !>    - For equality ones, the normal vector may have to be negated, b also.
+      call copy(m, b, 1, residuals, 1)
+      call gemv("t", n, m, 1.0_dp, At, n, x, 1, -1.0_dp, residuals, 1)
       l = iwsv
-      do i = 1, q
+      do i = 1, m
          l = l + 1
-         sum = residuals(i)
-         if (abs(sum) < vsmall) sum = 0.0_dp
+         sum = merge(residuals(i), 0.0_dp, abs(residuals(i)) > 0.0_dp)
          if (i > meq) then
             work(l) = sum
          else
             work(l) = -abs(sum)
             if (sum > 0.0_dp) then
-               call dscal(n, -1.0_dp, amat(1:n, i), 1)
-               bvec(i) = -bvec(i)
+               call scal(n, -1.0_dp, At(:, i), 1)
+               b(i) = -b(i)
             end if
          end if
       end do
@@ -175,47 +161,43 @@ contains
       !>    - Each violation is weighted by the number of non-zero elements in
       !>      the corresponding row of A.
       !>    - Selected violated constraint is the one with maximal absolute value.
-      nvl = 0
-      temp = 0.0_dp
-      do i = 1, q
+      nvl = 0; temp = 0.0_dp
+      do i = 1, m
          if (work(iwsv + i) < temp*work(iwnbv + i)) then
-            nvl = i
-            temp = work(iwsv + i)/work(iwnbv + i)
+            nvl = i; temp = work(iwsv + i)/work(iwnbv + i)
          end if
       end do
+
+      !> If no constraint is being violated, we are optimal.
+      !> Return the vector of Lagrange multipliers and exit.
       if (nvl == 0) then
-         lagr(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
+         y(iact(1:nact)) = work(iwuv + 1:iwuv + nact)
          return
       end if
 
       !> Compute d = J.T @ n+
       !>    -  n+ is the normal vector of the violated constraint.
-      !>    -  J is stored in dmat in this implementation.
+      !>    -  J is stored in P in this implementation.
       !>    -  If a constraint is dropped, we come back here.
       loop55: do
          block700: block
 
-            call dgemv("t", n, n, 1.0_dp, dmat(1:n, 1:n), n, amat(1:n, nvl), 1, &
-                       0.0_dp, work(1:n), 1)
+            call gemv("t", n, n, 1.0_dp, P, n, At(:, nvl), 1, 0.0_dp, work(:n), 1)
 
             !> Compute z = J_2 @ d_2
-            l1 = iwzv
-            work(l1 + 1:l1 + n) = 0.0_dp
-            call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, &
-                       work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
+            l1 = iwzv; work(l1 + 1:l1 + n) = 0.0_dp
+            call gemv("n", n, n - nact, 1.0_dp, P(:, nact + 1:n), n, work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
             !>       to inequality constraints).
+            call copy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
+            call tpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), work(iwrv + 1:iwrv + nact), 1)
             t1inf = .true.
-            call dcopy(nact, work(1:nact), 1, work(iwrv + 1:iwrv + nact), 1)
-            call dtpsv("u", "n", "n", nact, work(iwrm + 1:iwrm + nact), &
-                       work(iwrv + 1:iwrv + nact), 1)
             do i = 1, nact
                if (iact(i) <= meq) cycle
                if (work(iwrv + i) <= 0.0_dp) cycle
-               t1inf = .false.
-               it1 = i
+               t1inf = .false.; it1 = i
             end do
 
             !> If r has positive elements:
@@ -229,15 +211,14 @@ contains
                   if (work(iwrv + i) <= 0.0_dp) cycle
                   temp = work(iwuv + i)/work(iwrv + i)
                   if (temp < t1) then
-                     t1 = temp
-                     it1 = i
+                     t1 = temp; it1 = i
                   end if
                end do
             end if
 
             !> Test if the z vector is equal to zero.
-            sum = dnrm2(n, work(iwzv + 1:iwzv + n), 1)
-            if (sum <= vsmall) then
+            sum = norm(work(iwzv + 1:iwzv + n), 2)
+            if (sum <= eps) then
                !> No step in primal space such that the new constraint becomes feasible.
                !>    -  Take step in dual space and drop a constraint.
                if (t1inf) then
@@ -247,30 +228,24 @@ contains
                   !> Take partial step in dual space.
                   !>    -  Drop the it1-th active constraint.
                   !>    -  Continue at step 2(a) (marked by label 55).
-                  call daxpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, &
-                             work(iwuv + 1:iwuv + nact), 1)
+                  call axpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
                   work(iwuv + nact + 1) = work(iwuv + nact + 1) + t1
                   exit block700
                end if
             else
                !> Minimum step in primal space such that the constraint becomes feasible.
                !>    -  Full step length t2.
-               !>    -  Keep sum = z.T @ n+ to update crval below.
-               sum = ddot(n, work(iwzv + 1:iwzv + n), 1, amat(1:n, nvl), 1)
-               tt = -work(iwsv + nvl)/sum
-               t2min = .true.
-               if (.not. t1inf) then
-                  if (t1 < tt) then
-                     tt = t1
-                     t2min = .false.
-                  end if
+               !>    -  Keep sum = z.T @ n+ to update obj below.
+               sum = dot_product(work(iwzv + 1:iwzv + n), At(:, nvl))
+               tt = -work(iwsv + nvl)/sum; t2min = .true.
+               if ((.not. t1inf) .and. (t1 < tt)) then
+                  tt = t1; t2min = .false.
                end if
 
                !> Take step in primal and dual space.
-               call daxpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
-               crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
-               call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
-                          work(iwuv + 1:iwuv + nact), 1)
+               call axpy(n, tt, work(iwzv + 1:iwzv + n), 1, x, 1)
+               obj = obj + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
+               call axpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
 
                !> If a full step has been taken:
@@ -280,15 +255,13 @@ contains
                   !> Full step was performed.
                   !>    -  Add constraint nvl to the list of active constraints.
                   !>    -  Update J and r.
-                  nact = nact + 1
-                  iact(nact) = nvl
+                  nact = nact + 1; iact(nact) = nvl
                   !> To update r:
                   !>    -  Put the first nact-1 components of the d vector into column
                   !>       nact of r.
                   l = iwrm + ((nact - 1)*nact)/2 + 1
                   do i = 1, nact - 1
-                     work(l) = work(i)
-                     l = l + 1
+                     work(l) = work(i); l = l + 1
                   end do
 
                   !> If nact = n:
@@ -305,7 +278,7 @@ contains
                         !> Find the Givens rotation reducing the l1-th element of d to zero.
                         !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
-                        call dlartg(work(i - 1), work(i), gc, gs, temp)
+                        call lartg(work(i - 1), work(i), gc, gs, temp)
 
                         !> Givens rotation is done with the matrix [gc gs, gs -gc].
                         !>    -  If gc = 1, i-th element of d is zero compared with element
@@ -314,7 +287,7 @@ contains
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
                         work(i - 1) = temp
-                        call drot(n, dmat(1, i - 1), 1, dmat(1, i), 1, gc, gs)
+                        call rot(n, P(:, i - 1), 1, P(:, i), 1, gc, gs)
                      end do
 
                      !> l is still pointing to element (nact,nact) of the matrix r.
@@ -327,16 +300,14 @@ contains
                   !>    -  Continue to step 2(a) (marked by label 55).
                   !> Since fit changed, we need to recalculate by "how much" the chosen
                   !> constraint is now violated.
-                  sum = -bvec(nvl) + ddot(n, amat(1:n, nvl), 1, sol(1:n), 1)
-                  ! sum = residuals(i)
+                  sum = dot_product(At(:, nvl), x) - b(nvl)
                   if (nvl > meq) then
                      work(iwsv + nvl) = sum
                   else
                      work(iwsv + nvl) = -abs(sum)
                      if (sum > 0.0_dp) then
-                        call dscal(n, -1.0_dp, amat(1:n, nvl), 1)
-                        bvec(nvl) = -bvec(nvl)
-                        ! residuals(nvl) = -residuals(nvl)
+                        call scal(n, -1.0_dp, At(:, nvl), 1)
+                        b(nvl) = -b(nvl)
                      end if
                   end if
                   exit block700
@@ -363,7 +334,7 @@ contains
                l = iwrm + (it1*(it1 + 1))/2 + 1
                l1 = l + it1
                if (work(l1) /= 0.0_dp) then ! first go to 798
-                  call dlartg(work(l1 - 1), work(l1), gc, gs, temp)
+                  call lartg(work(l1 - 1), work(l1), gc, gs, temp)
 
                   !> Givens rotation is done with the matrix [gc gc ; gs -gc].
                   !> If gc = 0:
@@ -380,7 +351,7 @@ contains
                            work(l1) = temp
                            l1 = l1 + i
                         end do
-                        call dswap(n, dmat(:, it1), 1, dmat(:, it1 + 1), 1)
+                        call swap(n, P(:, it1), 1, P(:, it1 + 1), 1)
                      else
                         do i = it1 + 1, nact
                            temp = gc*work(l1 - 1) + gs*work(l1)
@@ -388,7 +359,7 @@ contains
                            work(l1 - 1) = temp
                            l1 = l1 + i
                         end do
-                        call drot(n, dmat(1, it1), 1, dmat(1, it1 + 1), 1, gc, gs)
+                        call rot(n, P(:, it1), 1, P(:, it1 + 1), 1, gc, gs)
                      end if
                      ! shift column (it1+1) of r to column (it1) (that is, the first it1
                      ! elements). the posit1on of element (1,it1+1) of r was calculated above
@@ -396,7 +367,7 @@ contains
                   end if
                end if
 
-               l1 = l - it1; call dcopy(it1, work(l), 1, work(l1), 1)
+               l1 = l - it1; call copy(it1, work(l:l + it1), 1, work(l1:l1 + it1), 1)
 
                !> Update vector u and iact as necessary and continue
                !> with updating the matrices J and R.
@@ -492,14 +463,14 @@ contains
    integer  :: i, j, l, l1, info, it1, iwzv, iwrv, iwrm, iwsv, iwuv, nvl, r, iwnbv
    real(dp) :: temp, sum, t1, tt, gc, gs, nu, vsmall
    logical  :: t1inf, t2min
-   real(dp) :: dnrm2, ddot
+   type(linalg_state_type) :: err
 
    r = min(n, q)
    l = 2*n + (r*(r + 5))/2 + 2*q + 1
    vsmall = epsilon(1.0_dp)
 
    !> Store the initial dvec and initialize some arrays.
-   call dcopy(n, dvec(1:n), 1, work(1:n), 1)
+   call copy(n, dvec(1:n), 1, work(1:n), 1)
    work(n + 1:l) = 0.0_dp; iact(1:q) = 0; lagr(1:q) = 0.0_dp
 
    !------------------------------------------------------------
@@ -507,19 +478,14 @@ contains
    !------------------------------------------------------------
    if (ierr == 0) then
       !> Matrix has not been factorized yet.
-      call dpotrf("u", fddmat, dmat, n, info)   ! Cholesky factorization.
-      if (info /= 0) then
-         ierr = 2; return
-      end if
-      call dpotrs("u", fddmat, 1, dmat, n, dvec, n, info)   ! Solve Ax = b using Chol. fact.
-      call dtrtri("u", "n", fddmat, dmat, n, info) ! Compute inv(R) from Chol. fact.
-   else
-      !> Matrix has already been pre-factorized by calling dpofa and dpori.
-      !> Multiply by inv(R).T
-      call dtrmv("u", "t", "n", n, dmat, n, dvec, 1)
-      !> Multiply by inv(R).
-      call dtrmv("u", "n", "n", n, dmat, n, dvec, 1)
+      call cholesky(dmat(:n, :n), lower=.false., other_zeroed=.true.)
+      call trtri("u", "n", n, dmat, n, info) ! Compute inv(R) from Chol. fact.
    end if
+   !> Matrix has already been pre-factorized by calling dpofa and dpori.
+   !> Multiply by inv(R).T
+   call trmv("u", "t", "n", n, dmat, n, dvec, 1)
+   !> Multiply by inv(R).
+   call trmv("u", "n", "n", n, dmat, n, dvec, 1)
 
    !> Book-keeping:
    !>    - set lower triangular part of dmat to zero,
@@ -528,8 +494,8 @@ contains
    do concurrent(i=1:n, j=1:n)
       if (i > j) dmat(i, j) = 0.0_dp
    end do
-   call dcopy(n, dvec(1:n), 1, sol(1:n), 1)
-   crval = -0.5_dp*ddot(n, sol(1:n), 1, work(1:n), 1)
+   call copy(n, dvec(1:n), 1, sol(1:n), 1)
+   crval = -0.5_dp*dot_product(sol(1:n), work(1:n))
    ierr = 0
 
    !> Calculate some constants, i.e., from which index on the different
@@ -543,7 +509,7 @@ contains
 
    !> Calculate the norm of each column of the constraint matrix
    do i = 1, q
-      work(iwnbv + i) = dnrm2(fdamat, amat(1:fdamat, i), 1)
+      work(iwnbv + i) = norm(amat(1:fdamat, i), 2)
    end do
    nact = 0
    iter(1) = 0
@@ -573,7 +539,7 @@ contains
          else
             work(l) = -abs(sum)
             if (sum > 0.0_dp) then
-               call dscal(fdamat, -1.0_dp, amat(1:fdamat, i), 1)
+               call scal(fdamat, -1.0_dp, amat(1:fdamat, i), 1)
                bvec(i) = -bvec(i)
             end if
          end if
@@ -619,8 +585,8 @@ contains
             !> Compute z = J_2 @ d_2
             l1 = iwzv
             work(l1 + 1:l1 + n) = 0.0_dp
-            call dgemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, &
-                       work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
+            call gemv("n", n, n - nact, 1.0_dp, dmat(1:n, nact + 1:n), n, &
+                      work(nact + 1:n), 1, 0.0_dp, work(l1 + 1:l1 + n), 1)
 
             !> Compute r = inv(R) @ d_1
             !>    -  Check if r has positive entries (among entries corresponding
@@ -660,7 +626,7 @@ contains
             end if
 
             !> Test if the z vector is equal to zero.
-            sum = dnrm2(n, work(iwzv + 1:iwzv + n), 1)
+            sum = norm(work(iwzv + 1:iwzv + n), 2)
             if (sum <= vsmall) then
                !> No step in primal space such that the new constraint becomes feasible.
                !>    -  Take step in dual space and drop a constraint.
@@ -671,8 +637,8 @@ contains
                   !> Take partial step in dual space.
                   !>    -  Drop the it1-th active constraint.
                   !>    -  Continue at step 2(a) (marked by label 55).
-                  call daxpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, &
-                             work(iwuv + 1:iwuv + nact), 1)
+                  call axpy(nact, -t1, work(iwrv + 1:iwrv + nact), 1, &
+                            work(iwuv + 1:iwuv + nact), 1)
                   work(iwuv + nact + 1) = work(iwuv + nact + 1) + t1
                   exit block700
                end if
@@ -694,10 +660,10 @@ contains
                end if
 
                !> Take step in primal and dual space.
-               call daxpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
+               call axpy(n, tt, work(iwzv + 1:iwzv + n), 1, sol(1:n), 1)
                crval = crval + tt*sum*(tt/2.0_dp + work(iwuv + nact + 1))
-               call daxpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
-                          work(iwuv + 1:iwuv + nact), 1)
+               call axpy(nact, -tt, work(iwrv + 1:iwrv + nact), 1, &
+                         work(iwuv + 1:iwuv + nact), 1)
                work(iwuv + nact + 1) = work(iwuv + nact + 1) + tt
 
                !> If a full step has been taken:
@@ -732,7 +698,7 @@ contains
                         !> Find the Givens rotation reducing the l1-th element of d to zero.
                         !> If it is already zero, do nothing except for decreasing l1.
                         if (work(i) == 0.0_dp) cycle
-                        call dlartg(work(i - 1), work(i), gc, gs, temp)
+                        call lartg(work(i - 1), work(i), gc, gs, temp)
 
                         !> Givens rotation is done with the matrix [gc gs, gs -gc].
                         !>    -  If gc = 1, i-th element of d is zero compared with element
@@ -741,7 +707,7 @@ contains
                         !>       element of d has to be updated to temp.
                         if (gc == 1.0_dp) cycle
                         work(i - 1) = temp
-                        call drot(n, dmat(1, i - 1), 1, dmat(1, i), 1, gc, gs)
+                        call rot(n, dmat(1:n, i - 1), 1, dmat(1:n, i), 1, gc, gs)
                      end do
 
                      !> l is still pointing to element (nact,nact) of the matrix r.

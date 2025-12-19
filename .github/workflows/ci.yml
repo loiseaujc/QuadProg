@@ -1,36 +1,26 @@
 name: ci
 on: [push]
 
+permissions:
+  contents: write
+
 jobs:
   test:
+
+    # Run FPM tests (debug + release) on all OS/compiler combination.
+    name: ${{ matrix.os }}_${{ matrix.compiler }}_fpm
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        compiler: [gfortran, ifx]
         include:
           - os: ubuntu-latest
             compiler: gfortran
-            compiler-version: 14.1.0
-            flag-debug: "-coverage"
-            extra-packages: "lcov, blas, lapack"
-          - os: ubuntu-latest
-            compiler: ifx
-            compiler-version: 2025.2.1
-            extra-packages: "blas, lapack"
+            compiler-version: 13.3.0
+            fpm-options: "--profile debug --flag '-coverage'"
+            extra-packages: "lcov"
            
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          activate-environment: fortran
-          channels: conda-forge, defaults
-
       - name: Setup Fortran
         uses: gha3mi/setup-fortran-conda@latest
         with:
@@ -41,14 +31,14 @@ jobs:
 
       - name: fpm test (debug)
         run: |
-          fpm build --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose
-          fpm test --compiler ${{ matrix.compiler }} --profile debug --flag "${{ matrix.flag-debug }}" --verbose
+          fpm build --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose --show-model
+          fpm test --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose
 
       - name: Run example
         run: |
-          fpm run --compiler ${{ matrix.compiler }} --profile debug --example mpc --flag "${{ matrix.flag-debug }}" --verbose
-          fpm run --compiler ${{ matrix.compiler }} --profile debug --example compact_mpc --flag "${{ matrix.flag-debug }}" --verbose
-          fpm run --compiler ${{ matrix.compiler }} --profile debug --example markowitz --flag "${{ matrix.flag-debug }}" --verbose
+          fpm run --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --example mpc
+          fpm run --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --example compact_mpc
+          fpm run --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --example markowitz
 
       - name: Create coverage report
         if: contains( matrix.os, 'ubuntu') && contains( matrix.compiler, 'gfortran')
