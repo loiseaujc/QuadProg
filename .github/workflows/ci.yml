@@ -21,7 +21,7 @@ jobs:
             extra-packages: "lcov"
           - os: ubuntu-latest
             compiler: ifx
-            extra-packages: mkl
+            extra-packages: "mkl"
             fpm-options: "--profile debug"
            
     steps:
