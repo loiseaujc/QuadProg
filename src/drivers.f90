@@ -15,7 +15,7 @@
 !  foundation, inc., 59 temple place - suite 330, boston, ma 02111-1307,
 !  usa.
 submodule(quadprog) modernized_drivers
-   implicit none
+   implicit none(type, external)
 contains
 !  this routine uses the goldfarb/idnani algorithm to solve the
 !  following minimization problem:

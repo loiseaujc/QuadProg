@@ -1,5 +1,6 @@
 module QuadProg
    use quadprog_constants, only: dp
+   use stdlib_optval, only: optval
    use stdlib_linalg, only: cholesky, norm, qr, linalg_state_type
    use stdlib_linalg_blas, only: scal, axpy, copy, swap, &
                                  trmv, gemv, tpsv, rot
@@ -7,7 +8,7 @@ module QuadProg
                                    geqrf, orgqr
    use stdlib_intrinsics, only: dot_product => stdlib_dot_product
    use assert_m, only: assert => assert_always
-   implicit none
+   implicit none(type, external)
    private
 
    public :: dp
@@ -77,11 +78,12 @@ module QuadProg
       !!
       !!    - `d` (optional)    :   Rank-1 array of size `p` defining the right-hand side of the
       !!                            inequality constraints. It is an `intent(in)` argument.
-      module type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
-         implicit none
+      module function initialize_qp_problem(P, q, A, b, C, d) result(prob)
+         implicit none(type, external)
          real(dp), intent(in)           :: P(:, :), q(:)
          real(dp), optional, intent(in) :: A(:, :), b(:)
          real(dp), optional, intent(in) :: C(:, :), d(:)
+         type(qp_problem) :: prob
       end function initialize_qp_problem
    end interface
 
@@ -100,14 +102,15 @@ module QuadProg
       integer               :: neq, ncons
    end type compact_qp_problem
    interface compact_qp_problem
-      module type(compact_qp_problem) function initialize_compact_qp_problem(P, q, A, iamat, b, &
-                                                                             C, icmat, d) result(prob)
-         implicit none
+      module function initialize_compact_qp_problem(P, q, A, iamat, b, &
+                                                    C, icmat, d) result(prob)
+         implicit none(type, external)
          real(dp), intent(in)           :: P(:, :), q(:)
          real(dp), optional, intent(in) :: A(:, :), b(:)
          integer, optional, intent(in)  :: iamat(:, :)
          real(dp), optional, intent(in) :: C(:, :), d(:)
          integer, optional, intent(in)  :: icmat(:, :)
+         type(compact_qp_problem) :: prob
       end function initialize_compact_qp_problem
    end interface
 
@@ -151,11 +154,11 @@ module QuadProg
       !!                    the associated vector of Lagrange multipliers and the value of the
       !!                    objective function at the constrained solution.
       module type(OptimizeResult) function solve_standard_qp(problem) result(result)
-         implicit none
+         implicit none(type, external)
          type(qp_problem), intent(in) :: problem
       end function solve_standard_qp
       module type(OptimizeResult) function solve_compact_qp(problem) result(result)
-         implicit none
+         implicit none(type, external)
          type(compact_qp_problem), intent(in) :: problem
       end function solve_compact_qp
    end interface
@@ -167,7 +170,7 @@ module QuadProg
    interface
       module subroutine qpgen1(dmat, dvec, fddmat, n, sol, lagr, crval, amat, iamat, bvec, &
                                fdamat, q, meq, iact, nact, iter, work, ierr)
-         implicit none
+         implicit none(type, external)
          integer, intent(in)     :: fddmat, n
          !! Dimensions of the symmetric positive definit matrix Dmat.
          integer, intent(in)     :: fdamat, q
@@ -195,7 +198,7 @@ module QuadProg
 
       module subroutine qpgen2(P, q, At, b, meq, x, y, obj, &
                                iact, nact, iter, work, ierr)
-         implicit none
+         implicit none(type, external)
          integer, intent(in)     :: meq
          !! Number of equality constraints.
          integer, intent(out)    :: iact(:), nact
@@ -248,10 +251,10 @@ module QuadProg
       !!    - `x`   :   Rank-1 array of size `n` returned by the function. It contains the
       !!                non-negative coefficients of the least-squares fit.
       module function nnls(A, b) result(x)
-         implicit none
-         real(dp), intent(inout)        :: A(:, :)
-         real(dp), intent(in)           :: b(:)
-         real(dp), allocatable          :: x(:)
+         implicit none(type, external)
+         real(dp), intent(inout) :: A(:, :)
+         real(dp), intent(in)    :: b(:)
+         real(dp), allocatable   :: x(:)
       end function nnls
    end interface
 
@@ -285,13 +288,26 @@ module QuadProg
       !!    - `ub` (optional)   :   Rank-1 array of size `n` defining the upper bounds for the
       !!                            solution of the problem. It is an `intent(in)` argument.
       module function bvls(A, b, ub, lb) result(x)
-         implicit none
+         implicit none(type, external)
          real(dp), intent(inout)        :: A(:, :)
          real(dp), intent(in)           :: b(:)
          real(dp), optional, intent(in) :: ub(:)
          real(dp), optional, intent(in) :: lb(:)
          real(dp), allocatable          :: x(:)
       end function bvls
+   end interface
+
+   interface
+      module function lasso(A, b, lambda, rho, tol, maxiter) result(x)
+         implicit none(type, external)
+         real(dp), intent(inout) :: A(:, :)
+         real(dp), intent(in)    :: b(:)
+         real(dp), intent(in)    :: lambda
+         real(dp), optional, intent(in) :: rho
+         real(dp), optional, intent(in) :: tol
+         integer, optional, intent(in)  :: maxiter
+         real(dp), allocatable          :: x(:)
+      end function lasso
    end interface
 
 contains
@@ -302,57 +318,53 @@ contains
    !-----                             -----
    !---------------------------------------
 
-   module type(qp_problem) function initialize_qp_problem(P, q, A, b, C, d) result(prob)
-      implicit none
-      real(dp), intent(in)           :: P(:, :), q(:)
-      real(dp), optional, intent(in) :: A(:, :), b(:)
-      real(dp), optional, intent(in) :: C(:, :), d(:)
-      integer :: info, n
+   module procedure initialize_qp_problem
+   integer :: info, n
 
-      prob%neq = 0; prob%ncons = 0
+   prob%neq = 0; prob%ncons = 0
 
-      !> Sanity checks for the quadratic form.
-      call assert(assertion=size(P, 1) == size(P, 2), &
-                  description="Matrix P is not square.")
-      call assert(assertion=size(P, 1) == size(q), &
-                  description="Matrix P and vector q have incompatible dimensions.")
+   !> Sanity checks for the quadratic form.
+   call assert(assertion=size(P, 1) == size(P, 2), &
+               description="Matrix P is not square.")
+   call assert(assertion=size(P, 1) == size(q), &
+               description="Matrix P and vector q have incompatible dimensions.")
 
-      !> Quadratic cost.
-      prob%P = P; prob%q = q; n = size(P, 1)
+   !> Quadratic cost.
+   prob%P = P; prob%q = q; n = size(P, 1)
 
-      !> Pre-factorize the symmetric positive definite matrix.
-      call cholesky(prob%P, lower=.false., other_zeroed=.true.)
-      call trtri("u", "n", n, prob%P, n, info)
+   !> Pre-factorize the symmetric positive definite matrix.
+   call cholesky(prob%P, lower=.false., other_zeroed=.true.)
+   call trtri("u", "n", n, prob%P, n, info)
 
-      !> Sanity checks for the equality constraints.
-      call assert(assertion=(present(A) .and. present(b)) .or. (.not. present(A) .and. .not. present(b)), &
-                  description="Equality constraints are mis-specified (A or b is missing).")
+   !> Sanity checks for the equality constraints.
+   call assert(assertion=present(A) .eqv. present(b), &
+               description="Equality constraints are mis-specified (A or b is missing).")
 
-      if (present(A) .and. present(b)) then
-         call assert(assertion=size(P, 2) == size(A, 2), &
-                     description="Matrices P and A have incompatible number of columns.")
-         call assert(assertion=size(A, 1) == size(b), &
-                     description="Matrix A and vector b have incompatible dimensions.")
-         prob%A = A; prob%b = b; prob%neq = size(b); prob%ncons = size(b)
-      end if
+   if (present(A)) then
+      call assert(assertion=size(P, 2) == size(A, 2), &
+                  description="Matrices P and A have incompatible number of columns.")
+      call assert(assertion=size(A, 1) == size(b), &
+                  description="Matrix A and vector b have incompatible dimensions.")
+      prob%A = A; prob%b = b; prob%neq = size(b); prob%ncons = size(b)
+   end if
 
-      !> Sanity checks for the inequality constraints.
-      call assert(assertion=(present(C) .and. present(d)) .or. (.not. present(C) .and. .not. present(d)), &
-                  description="Inequality constraints are mis-specified (C or d is missing).")
+   !> Sanity checks for the inequality constraints.
+   call assert(assertion=present(C) .eqv. present(d), &
+               description="Inequality constraints are mis-specified (C or d is missing).")
 
-      if (present(C) .and. present(d)) then
-         call assert(assertion=size(P, 2) == size(C, 2), &
-                     description="Matrices P and C have incompatible number of columns.")
-         call assert(assertion=size(C, 1) == size(d), &
-                     description="Matrix C and vector d have incompatible dimensions.")
-         prob%C = C; prob%d = d; prob%ncons = prob%neq + size(d)
-      end if
+   if (present(C)) then
+      call assert(assertion=size(P, 2) == size(C, 2), &
+                  description="Matrices P and C have incompatible number of columns.")
+      call assert(assertion=size(C, 1) == size(d), &
+                  description="Matrix C and vector d have incompatible dimensions.")
+      prob%C = C; prob%d = d; prob%ncons = prob%neq + size(d)
+   end if
 
-      return
-   end function initialize_qp_problem
+   return
+   end procedure initialize_qp_problem
 
-   subroutine get_constraints_matrix(prob, G, h)
-      implicit none
+   pure subroutine get_constraints_matrix(prob, G, h)
+      implicit none(type, external)
       type(qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
       real(dp), allocatable, intent(out) :: G(:, :)
@@ -384,46 +396,41 @@ contains
             allocate (G(1, 1), h(1), source=0.0_dp)
          end if
       end associate
-
-      return
    end subroutine get_constraints_matrix
 
-   module type(OptimizeResult) function solve_standard_qp(problem) result(result)
-      implicit none
-      type(qp_problem), intent(in) :: problem
-      real(dp), allocatable :: P(:, :), q(:)
-      real(dp), allocatable :: G(:, :), h(:)
-      real(dp), allocatable :: work(:)
-      integer               :: n, neq, ncons, r, lwork, nact, iter(2), info
-      integer, allocatable  :: iact(:)
+   module procedure solve_standard_qp
+   real(dp), allocatable :: P(:, :), q(:)
+   real(dp), allocatable :: G(:, :), h(:)
+   real(dp), allocatable :: work(:)
+   integer               :: n, neq, ncons, r, lwork, nact, iter(2), info
+   integer, allocatable  :: iact(:)
 
-      n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
-      !> Allocate data.
-      allocate (iact(ncons))
-      allocate (P, source=problem%P); allocate (q, source=problem%q)
-      allocate (result%x(n), source=q)
-      allocate (result%y(ncons), source=0.0_dp)
+   n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
+   !> Allocate data.
+   allocate (iact(ncons))
+   allocate (P, source=problem%P); allocate (q, source=problem%q)
+   allocate (result%x(n), source=q)
+   allocate (result%y(ncons), source=0.0_dp)
 
-      if (ncons == 0) then
-         !> Solve unconstrained problem.
-         call trmv("u", "t", "n", n, P, n, result%x, 1)  ! Multiply by inv(R).T
-         call trmv("u", "n", "n", n, P, n, result%x, 1)  ! Multiply by inv(R)
-         result%success = .true.
-      else
-         !> Allocate workspace
-         r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-         allocate (work(lwork), source=0.0_dp)
-         !> Get the constraints matrix and vector.
-         call get_constraints_matrix(problem, G, h)
-         !> Solve the QP problem.
-         info = 1 ! P is already factorized when defining the QP.
-         call qpgen2(P, q, G, h, neq, result%x, result%y, result%obj, &
-                     iact, nact, iter, work, info)
-         !> Success?
-         result%success = (info == 0)
-      end if
-      return
-   end function solve_standard_qp
+   if (ncons == 0) then
+      !> Solve unconstrained problem.
+      call trmv("u", "t", "n", n, P, n, result%x, 1)  ! Multiply by inv(R).T
+      call trmv("u", "n", "n", n, P, n, result%x, 1)  ! Multiply by inv(R)
+      result%success = .true.
+   else
+      !> Allocate workspace
+      r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
+      allocate (work(lwork), source=0.0_dp)
+      !> Get the constraints matrix and vector.
+      call get_constraints_matrix(problem, G, h)
+      !> Solve the QP problem.
+      info = 1 ! P is already factorized when defining the QP.
+      call qpgen2(P, q, G, h, neq, result%x, result%y, result%obj, &
+                  iact, nact, iter, work, info)
+      !> Success?
+      result%success = (info == 0)
+   end if
+   end procedure solve_standard_qp
 
    !--------------------------------------
    !-----                            -----
@@ -431,56 +438,49 @@ contains
    !-----                            -----
    !--------------------------------------
 
-   module type(compact_qp_problem) function initialize_compact_qp_problem(P, q, A, iamat, b, &
-                                                                          C, icmat, d) result(prob)
-      implicit none
-      real(dp), intent(in)           :: P(:, :), q(:)
-      real(dp), optional, intent(in) :: A(:, :), b(:)
-      integer, optional, intent(in)  :: iamat(:, :)
-      real(dp), optional, intent(in) :: C(:, :), d(:)
-      integer, optional, intent(in)  :: icmat(:, :)
-      integer :: info, n
+   module procedure initialize_compact_qp_problem
+   integer :: info, n
 
-      prob%neq = 0; prob%ncons = 0
+   prob%neq = 0; prob%ncons = 0
 
-      !> Sanity checks for the quadratic form.
-      if (size(P, 1) /= size(P, 2)) error stop "Matrix P is not square."
-      if (size(P, 1) /= size(q)) error stop "Matrix P and vector q have incompatible dimensions."
+   !> Sanity checks for the quadratic form.
+   if (size(P, 1) /= size(P, 2)) error stop "Matrix P is not square."
+   if (size(P, 1) /= size(q)) error stop "Matrix P and vector q have incompatible dimensions."
 
-      !> Quadratic cost.
-      prob%P = P; prob%q = q; n = size(P, 1)
+   !> Quadratic cost.
+   prob%P = P; prob%q = q; n = size(P, 1)
 
-      !> Pre-factorize the symmetric positive definite matrix.
-      call cholesky(prob%P, lower=.false., other_zeroed=.true.)
-      call trtri("u", "n", n, prob%P, n, info)
+   !> Pre-factorize the symmetric positive definite matrix.
+   call cholesky(prob%P, lower=.false., other_zeroed=.true.)
+   call trtri("u", "n", n, prob%P, n, info)
 
-      !> Sanity checks for the equality constraints.
-      if (present(A) .and. .not. present(iamat)) error stop "Matrix A is provided but not iamat."
-      if (.not. present(A) .and. present(iamat)) error stop "iamat is provided but not matrix A."
-      if (present(A) .and. .not. present(b)) error stop "Right-hand side vector b for the equality constraints is missing."
-      if (.not. present(A) .and. present(b)) error stop "Matrix A for the equality constraints is missing."
+   !> Sanity checks for the equality constraints.
+   if (present(A) .and. .not. present(iamat)) error stop "Matrix A is provided but not iamat."
+   if (.not. present(A) .and. present(iamat)) error stop "iamat is provided but not matrix A."
+   if (present(A) .and. .not. present(b)) error stop "Right-hand side vector b for the equality constraints is missing."
+   if (.not. present(A) .and. present(b)) error stop "Matrix A for the equality constraints is missing."
 
-      if (present(A) .and. present(b) .and. present(iamat)) then
-         if (size(iamat, 1) /= size(A, 1) + 1) error stop "Matrix A and index iamat have incompatible dimensions."
-         if (size(iamat, 2) /= size(A, 2)) error stop "Matrix A and index iamat have incompatible dimensions."
-         prob%A = A; prob%iamat = iamat; prob%b = b; prob%neq = size(b); prob%ncons = size(b)
-      end if
+   if (present(A) .and. present(b) .and. present(iamat)) then
+      if (size(iamat, 1) /= size(A, 1) + 1) error stop "Matrix A and index iamat have incompatible dimensions."
+      if (size(iamat, 2) /= size(A, 2)) error stop "Matrix A and index iamat have incompatible dimensions."
+      prob%A = A; prob%iamat = iamat; prob%b = b; prob%neq = size(b); prob%ncons = size(b)
+   end if
 
-      !> Sanity checks for the inequality constraints.
-      if (present(C) .and. .not. present(icmat)) error stop "Matrix C is provided but not icmat."
-      if (.not. present(C) .and. present(icmat)) error stop "icmat is provided but not matrix C."
-      if (present(C) .and. .not. present(d)) error stop "Right-hand side vector d for the inequality constraints is missing."
-      if (.not. present(C) .and. present(d)) error stop "Matrix C for the inequality constraints is missing."
+   !> Sanity checks for the inequality constraints.
+   if (present(C) .and. .not. present(icmat)) error stop "Matrix C is provided but not icmat."
+   if (.not. present(C) .and. present(icmat)) error stop "icmat is provided but not matrix C."
+   if (present(C) .and. .not. present(d)) error stop "Right-hand side vector d for the inequality constraints is missing."
+   if (.not. present(C) .and. present(d)) error stop "Matrix C for the inequality constraints is missing."
 
-      if (present(C) .and. present(d) .and. present(icmat)) then
-         if (size(icmat, 1) /= size(C, 1) + 1) error stop "Matrix C and index icmat have incompatible dimensions."
-         if (size(icmat, 2) /= size(C, 2)) error stop "Matrix C and index icmat have incompatible dimensions."
-         prob%C = C; prob%icmat = icmat; prob%d = d; prob%ncons = prob%neq + size(d)
-      end if
-   end function initialize_compact_qp_problem
+   if (present(C) .and. present(d) .and. present(icmat)) then
+      if (size(icmat, 1) /= size(C, 1) + 1) error stop "Matrix C and index icmat have incompatible dimensions."
+      if (size(icmat, 2) /= size(C, 2)) error stop "Matrix C and index icmat have incompatible dimensions."
+      prob%C = C; prob%icmat = icmat; prob%d = d; prob%ncons = prob%neq + size(d)
+   end if
+   end procedure initialize_compact_qp_problem
 
-   subroutine get_compact_constraints_matrix(prob, G, igmat, h)
-      implicit none
+   pure subroutine get_compact_constraints_matrix(prob, G, igmat, h)
+      implicit none(type, external)
       type(compact_qp_problem), intent(in) :: prob
       !! Quadratic Problem to be solved.
       real(dp), allocatable, intent(out)   :: G(:, :)
@@ -527,42 +527,37 @@ contains
             allocate (igmat(2, n), source=0)
          end if
       end associate
-
-      return
    end subroutine get_compact_constraints_matrix
 
-   module type(OptimizeResult) function solve_compact_qp(problem) result(result)
-      implicit none
-      type(compact_qp_problem), intent(in) :: problem
-      real(dp), allocatable :: P(:, :), q(:)
-      real(dp), allocatable :: G(:, :), h(:)
-      integer, allocatable  :: igmat(:, :)
-      real(dp), allocatable :: work(:)
-      integer               :: n, neq, ncons, r, lwork, nact, iter(2), info
-      integer, allocatable  :: iact(:)
+   module procedure solve_compact_qp
+   real(dp), allocatable :: P(:, :), q(:)
+   real(dp), allocatable :: G(:, :), h(:)
+   integer, allocatable  :: igmat(:, :)
+   real(dp), allocatable :: work(:)
+   integer               :: n, neq, ncons, r, lwork, nact, iter(2), info
+   integer, allocatable  :: iact(:)
 
-      n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
+   n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
 
-      !> Allocate data.
-      allocate (iact(ncons))
-      allocate (P, source=problem%P); allocate (q, source=problem%q)
-      allocate (result%x, mold=q); result%x = 0.0_dp
-      allocate (result%y(ncons), source=0.0_dp)
+   !> Allocate data.
+   allocate (iact(ncons))
+   allocate (P, source=problem%P); allocate (q, source=problem%q)
+   allocate (result%x, mold=q); result%x = 0.0_dp
+   allocate (result%y(ncons), source=0.0_dp)
 
-      !> Allocate workspace
-      r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-      allocate (work(lwork), source=0.0_dp)
+   !> Allocate workspace
+   r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
+   allocate (work(lwork), source=0.0_dp)
 
-      !> Get the constraints matrix and vector.
-      call get_compact_constraints_matrix(problem, G, igmat, h)
+   !> Get the constraints matrix and vector.
+   call get_compact_constraints_matrix(problem, G, igmat, h)
 
-      !> Solve the QP problem.
-      info = 1 ! P is already factorized when defining the QP.
-      call qpgen1(P, q, n, n, result%x, result%y, result%obj, G, igmat, h, size(G, 1), &
-                  ncons, neq, iact, nact, iter, work, info)
-      !> Success?
-      result%success = (info == 0)
-      return
-   end function solve_compact_qp
+   !> Solve the QP problem.
+   info = 1 ! P is already factorized when defining the QP.
+   call qpgen1(P, q, n, n, result%x, result%y, result%obj, G, igmat, h, size(G, 1), &
+               ncons, neq, iact, nact, iter, work, info)
+   !> Success?
+   result%success = (info == 0)
+   end procedure solve_compact_qp
 
 end module QuadProg
