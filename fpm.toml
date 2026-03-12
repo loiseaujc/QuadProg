@@ -27,7 +27,6 @@ source-dir="src"
 
 [dependencies]
 stdlib = "*"
-blas = "*"
 assert = {git="https://github.com/BerkeleyLab/assert.git"}
 
 [dev-dependencies]
