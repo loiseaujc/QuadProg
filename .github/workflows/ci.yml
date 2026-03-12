@@ -19,6 +19,10 @@ jobs:
             compiler-version: 13.3.0
             fpm-options: "--profile debug --flag '-coverage'"
             extra-packages: "lcov"
+          - os: ubuntu-latest
+            compiler: ifx
+            extra-packages: mkl
+            fpm-options: "--profile debug"
            
     steps:
       - name: Setup Fortran
