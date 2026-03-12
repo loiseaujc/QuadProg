@@ -21,12 +21,7 @@ jobs:
             extra-packages: "lcov"
           - os: ubuntu-latest
             compiler: ifx
-            fpm-options: "--profile debug"
-          - os: ubuntu-latest
-            compiler: flang-new
-            fpm-options: "--profile debug"
-          - os: ubuntu-latest
-            compiler: nvfortran
+            extra-packages: mkl
             fpm-options: "--profile debug"
            
     steps:
