@@ -376,60 +376,72 @@ contains
       logical :: is_constrained
       integer :: i
 
-      associate (n => size(prob%P, 1), neq => prob%neq, ncons => prob%ncons)
-         is_constrained = allocated(prob%A) .or. allocated(prob%C)
+      associate (n => size(prob%P, 1), &    ! Number of optimization variables.
+                 neq => prob%neq, &         ! Number of equality constraints.
+                 ncons => prob%ncons)       ! Number of inequality constraints.
+
+         is_constrained = ncons > 0
          if (is_constrained) then
             allocate (G(n, ncons), h(ncons), source=0.0_dp)
             !> Linear equality constraints.
             if (allocated(prob%A)) then
-               do i = 1, neq
+               do concurrent(i=1:neq)
                   G(:, i) = prob%A(i, :); h(i) = prob%b(i)
                end do
             end if
             !> Linear inequality constraints.
             if (allocated(prob%C)) then
-               do i = neq + 1, ncons
+               do concurrent(i=neq + 1:ncons)
                   G(:, i) = prob%C(i - neq, :); h(i) = prob%d(i - neq)
                end do
             end if
          else
             allocate (G(1, 1), h(1), source=0.0_dp)
          end if
+
       end associate
    end subroutine get_constraints_matrix
 
    module procedure solve_standard_qp
+   integer               :: lwork, nact, iter(2), info
+   integer, allocatable  :: iact(:)
    real(dp), allocatable :: P(:, :), q(:)
    real(dp), allocatable :: G(:, :), h(:)
    real(dp), allocatable :: work(:)
-   integer               :: n, neq, ncons, r, lwork, nact, iter(2), info
-   integer, allocatable  :: iact(:)
 
-   n = size(problem%P, 1); neq = problem%neq; ncons = problem%ncons
-   !> Allocate data.
-   allocate (iact(ncons))
-   allocate (P, source=problem%P); allocate (q, source=problem%q)
-   allocate (result%x(n), source=q)
-   allocate (result%y(ncons), source=0.0_dp)
+   associate (n => size(problem%P, 1), &    ! Number of optimization variables.
+              neq => problem%neq, &         ! Number of equality constraints.
+              ncons => problem%ncons, &     ! Total number of constraints (== + >=).
+              r => min(n, ncons))
 
-   if (ncons == 0) then
-      !> Solve unconstrained problem.
-      call trmv("u", "t", "n", n, P, n, result%x, 1)  ! Multiply by inv(R).T
-      call trmv("u", "n", "n", n, P, n, result%x, 1)  ! Multiply by inv(R)
-      result%success = .true.
-   else
-      !> Allocate workspace
-      r = min(n, ncons); lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
-      allocate (work(lwork), source=0.0_dp)
-      !> Get the constraints matrix and vector.
-      call get_constraints_matrix(problem, G, h)
-      !> Solve the QP problem.
-      info = 1 ! P is already factorized when defining the QP.
-      call qpgen2(P, q, G, h, neq, result%x, result%y, result%obj, &
-                  iact, nact, iter, work, info)
-      !> Success?
-      result%success = (info == 0)
-   end if
+      !> Allocate data.
+      allocate (iact(ncons), source=0)
+      allocate (P, source=problem%P)
+      allocate (q, source=problem%q)
+      allocate (result%x(n), source=q)
+      allocate (result%y(ncons), source=0.0_dp)
+
+      if (ncons == 0) then
+         !> Solve unconstrained problem.
+         call trmv("u", "t", "n", n, P, n, result%x, 1)  ! Multiply by inv(R).T
+         call trmv("u", "n", "n", n, P, n, result%x, 1)  ! Multiply by inv(R)
+         result%success = .true.
+      else
+         !> Allocate workspace
+         lwork = 2*n + r*(r + 5)/2 + 2*ncons + 1
+         allocate (work(lwork), source=0.0_dp)
+         !> Get the constraints matrix and vector.
+         call get_constraints_matrix(problem, G, h)
+         !> Solve the QP problem.
+         info = 1 ! P is already factorized when defining the QP.
+         call qpgen2(P, q, G, h, neq, &                 ! Quadratic Program.
+                     result%x, result%y, result%obj, &  ! Solution.
+                     iact, nact, iter, work, info)      ! Working arrays.
+         !> Success?
+         result%success = (info == 0)
+      end if
+
+   end associate
    end procedure solve_standard_qp
 
    !--------------------------------------
