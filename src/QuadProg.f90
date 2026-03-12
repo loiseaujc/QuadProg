@@ -412,7 +412,7 @@ contains
    associate (n => size(problem%P, 1), &    ! Number of optimization variables.
               neq => problem%neq, &         ! Number of equality constraints.
               ncons => problem%ncons, &     ! Total number of constraints (== + >=).
-              r => min(n, ncons))
+              r => min(size(problem%P, 1), problem%ncons))
 
       !> Allocate data.
       allocate (iact(ncons), source=0)
