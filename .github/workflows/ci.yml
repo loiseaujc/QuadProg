@@ -36,8 +36,8 @@ jobs:
           platform: ${{ matrix.os }}
           compiler: ${{ matrix.compiler }}
           compiler-version: ${{ matrix.compiler-version }}
-          platform: ${{ matrix.os }}
           extra-packages: ${{ matrix.extra-packages }}
+          fpm-version: ${{ matrix.fpm-version }}
 
       - name: fpm test (debug)
         run: fpm test --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose
