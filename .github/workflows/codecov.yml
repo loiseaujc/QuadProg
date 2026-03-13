@@ -1,0 +1,43 @@
+name: codecov
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, compiler: gfortran, extra-packages: "pkg-config lcov openblas"}
+    steps:
+      - name: Setup Fortran
+        uses: gha3mi/setup-fortran-conda@latest
+        with:
+          platform: ${{ matrix.os }}
+          compiler: ${{ matrix.compiler }}
+          compiler-version: ${{ matrix.compiler-version }}
+          extra-packages: ${{ matrix.extra-packages }}
+          fpm-version: ${{ matrix.fpm-version }}
+
+      - name: Unit tests
+        run: fpm test --profile debug --flag "-coverage"
+
+      - name: Examples  
+        run: fpm run --example --profile debug --flag "-coverage"
+
+      - name: Create coverage report
+        run: |
+          mkdir -p ${{ env.COV_DIR }}
+          mv ./build/gfortran_*/*/* ${{ env.COV_DIR }}
+          lcov --capture --initial --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.base
+          lcov --capture           --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.capture
+          lcov --add-tracefile ${{ env.COV_DIR }}/coverage.base --add-tracefile ${{ env.COV_DIR }}/coverage.capture --output-file ${{ env.COV_DIR }}/coverage.info
+        env:
+            COV_DIR: build/coverage
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: build/coverage/coverage.info
