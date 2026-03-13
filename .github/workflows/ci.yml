@@ -39,8 +39,8 @@ jobs:
           extra-packages: ${{ matrix.extra-packages }}
           fpm-version: ${{ matrix.fpm-version }}
 
-      - name: fpm test (debug)
-        run: fpm test --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose
+      - name: fpm test (release)
+        run: fpm test --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose --profile release
 
-      - name: Run example
-        run: fpm run --compiler ${{ matrix.compiler }} --example
+      - name: Run example (release)
+        run: fpm run --compiler ${{ matrix.compiler }} --example --profile release
