@@ -26,7 +26,7 @@ jobs:
           # - {os: windows-latest, compiler: ifx, extra-packages: "pkg-config mkl", fpm-version: "0.12.0"}  # Cannot find mkl_intel_lp64.lib
 
           # Other compilers.
-          - {os: ubuntu-latest,  compiler: flang-new, extra-packages: "pkg-config openblas"}
+          # - {os: ubuntu-latest,  compiler: flang-new, extra-packages: "pkg-config openblas"}  # Compiler fails to build: error: 'initialize_compact_qp_problem' was not declared a separate module procedure
           # - {os: ubuntu-latest,  compiler: nvfortran, extra-packages: "pkg-config openblas"}  # Error with assert_m package.
 
     steps:
