@@ -41,5 +41,5 @@ jobs:
         run: fpm test --compiler ${{ matrix.compiler }} --verbose --profile release
 
       - name: Examples (release)
-        if: !contains( matrix.os, 'windows')
+        if: "!contains( matrix.os, 'windows')"
         run: fpm run --example --compiler ${{ matrix.compiler }} --profile release
