@@ -4,17 +4,17 @@ on: [push, pull_request]
 
 jobs:
   test:
+    name: ${{ matrix.os }}_${{ matrix.compiler }}_code_coverage
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {os: ubuntu-latest, compiler: gfortran, extra-packages: "pkg-config lcov openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 15, extra-packages: "openblas lcov"}
     steps:
       - name: Setup Fortran
         uses: gha3mi/setup-fortran-conda@latest
         with:
-          platform: ${{ matrix.os }}
           compiler: ${{ matrix.compiler }}
           compiler-version: ${{ matrix.compiler-version }}
           extra-packages: ${{ matrix.extra-packages }}
