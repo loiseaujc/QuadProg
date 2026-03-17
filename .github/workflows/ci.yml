@@ -1,46 +1,44 @@
 name: ci
-on: [push]
 
-permissions:
-  contents: write
+on: [push, pull_request]
 
 jobs:
   test:
+    name: ${{ matrix.os }}_${{ matrix.compiler }}_fpm
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           # GFotran compiler.
-          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 10, extra-packages: "pkg-config openblas"}
-          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 11, extra-packages: "pkg-config openblas"}
-          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 12, extra-packages: "pkg-config openblas"}
-          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 13, extra-packages: "pkg-config openblas"}
-          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 14, extra-packages: "pkg-config openblas"}
-          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 15, extra-packages: "pkg-config openblas"}
-          - {os: windows-latest, compiler: gfortran, compiler-version: 15, extra-packages: "pkg-config openblas"}
-          - {os: macos-latest, compiler: gfortran, compiler-version: 15, extra-packages: "pkg-config openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 10, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 11, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 12, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 13, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 14, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 15, extra-packages: "openblas"}
+          - {os: windows-latest, compiler: gfortran, compiler-version: 15, extra-packages: "openblas"}
+          - {os: macos-latest, compiler: gfortran, compiler-version: 15, extra-packages: "openblas"}
 
           # Intel IFX.
-          - {os: ubuntu-latest, compiler: ifx, extra-packages: "pkg-config mkl"}
-          # - {os: windows-latest, compiler: ifx, extra-packages: "pkg-config mkl", fpm-version: "0.12.0"}  # Cannot find mkl_intel_lp64.lib
+          - {os: ubuntu-latest, compiler: ifx, extra-packages: "mkl mkl-devel mkl-static mkl-include"}
+          - {os: windows-latest, compiler: ifx, extra-packages: "mkl mkl-devel mkl-static mkl-include", fpm-version: "0.12.0"}
 
           # Other compilers.
-          # - {os: ubuntu-latest,  compiler: flang-new, extra-packages: "pkg-config openblas"}  # Compiler fails to build: error: 'initialize_compact_qp_problem' was not declared a separate module procedure
-          # - {os: ubuntu-latest,  compiler: nvfortran, extra-packages: "pkg-config openblas"}  # Error with assert_m package.
-
+          - {os: ubuntu-latest,  compiler: flang-new, extra-packages: "openblas"}
+          - {os: windows-latest,  compiler: flang-new, extra-packages: "openblas"}
+          # - {os: ubuntu-latest,  compiler: nvfortran, extra-packages: "openblas"}  # Error with assert_m package.
     steps:
       - name: Setup Fortran
         uses: gha3mi/setup-fortran-conda@latest
         with:
-          platform: ${{ matrix.os }}
           compiler: ${{ matrix.compiler }}
           compiler-version: ${{ matrix.compiler-version }}
           extra-packages: ${{ matrix.extra-packages }}
           fpm-version: ${{ matrix.fpm-version }}
 
-      - name: fpm test (release)
-        run: fpm test --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose --profile release
+      - name: Unit tests (release)
+        run: fpm test --compiler ${{ matrix.compiler }} --verbose --profile release
 
-      - name: Run example (release)
-        run: fpm run --compiler ${{ matrix.compiler }} --example --profile release
+      - name: Examples (release)
+        run: fpm run --example --compiler ${{ matrix.compiler }} --profile release
