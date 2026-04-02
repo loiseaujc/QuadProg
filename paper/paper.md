@@ -1,8 +1,8 @@
 ---
-title: '`Modern QuadProg`: a modernized implementation of the classic `quadprog` Fortran solver'
+title: 'Modern QuadProg: a modern, open-source Fortran implementation of the Goldfarb-Idnani algorithm for convex quadratic programming'
 tags:
   - Fortran
-  - Quadratic Programs
+  - Quadratic Programming
   - Convex optimization
 authors:
   - name: Jean-Christophe Loiseau
@@ -40,6 +40,10 @@ Many problems in science and engineering can be formulated as convex quadratic p
 A non-exhaustive list includes: support vector machines in machine learning, Markowitz portfolio optimization in financial mathematics, or linear model predictive control in system engineering.
 Additionally, solving convex QPs forms the computational bottleneck of many optimization algorithms, e.g. *Newton's method* or *sequential linear-quadratic programming* for nonlinear optimization problems with twice differentiable objective and constraints.
 
+# State of the field
+
+# Software design
+
 ## A modernized implementation
 
 Among the many algorithms proposed to solve convex QPs, the one by @goldfarb-idnani has proven to be efficient, numerically stable and accurate.
@@ -48,7 +52,7 @@ Since then, `quadprog` has been ported to many different languages, including [J
 Yet, little effort within the Fortran community has been devoted to modernizing the original source code.
 This contribution is part of a wider community-driven effort aiming at modernizing the Fortran ecosystem at large.
 
-Written in FORTRAN 77, the original `quadprog` implementation makes use of language features now considered as obsolete.
+Written in FORTRAN 77, the original `quadprog` implementation makes use of language features now considered obsolete.
 Moreover, `blas` and `lapack` being not as well established back then as they are today, many vector and matrix-vector operations relied on simple implementations, potentially hindering the use of modern CPU instructions or hardware acceleration.
 In our modernization effort, the most important updates to the original code include:
 
@@ -58,9 +62,7 @@ In our modernization effort, the most important updates to the original code inc
 
 We also provide modern object-oriented interfaces (see `qp_problem`) as well as utility functions to solve non-negative least-squares (`nnls`), bounded-variables least-squares (`bvls`) and $\ell_1$ regularized least-squares (`lasso`).
 
-## A modern object-oriented interface
-
-A notable introduction in `Modern QuadProg` are object-oriented interfaces.
+**Object-oriented interface -** A notable introduction in `Modern QuadProg` are object-oriented interfaces.
 Given the datum $P$, $q$, $A$, $b$, $C$ and $d$ defining the quadratic problem, a `qp_problem` instance can be created as follows
 
 ```fortran
@@ -89,10 +91,10 @@ $$
 
 ```fortran
 program example
+    use iso_fortran_env, only: dp => real64
     use stdlib_linalg, only: eye
     use quadprog, only: OptimizeResult, qp_problem, solve
-    implicit none (type, external)
-    integer, parameter :: dp = selected_real_kind(15, 307)
+    implicit none
     integer, parameter :: n = 3                 ! Number of variables.
     real(dp) :: P(n, n), q(n), C(n, n), d(n)    ! Quadratic cost and inequality constraints.
     type(qp_problem) :: prob
@@ -117,13 +119,14 @@ end program
 More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example).
 These include a linear MPC controller with bounded actuation, and a Markowitz portfolio optimization problem.
 
-# Performance considerations
+## Performance considerations
 
 Beyond the source code translation from FORTRAN 77 to modern Fortran, computational performances have been improved by making explicit calls to the appropriate `blas` and `lapack` functions wherever appropriate.
 
+
 | Problem ID  | Number of variables | Number of constraints | Legacy | Modern | Speed-up |
 |:-----------:|:-------------------:|:---------------------:|:------:|:-------:|:--------:|
-|       HS118 | 15                  | 64                    | 26µs   | 41µs | 0.6x |
+|       HS118 | 15                  | 64                    | 26µs   | 41µs | 0.63x |
 |   LASER     | 1002                | 4004                  | 9.27s   | 2.96s | 3.1x |
 |   AUG3DCQP  | 3873                | 8746                  | 85.1s    | 31.3s | 2.7x |
 
@@ -138,20 +141,23 @@ The modernized implementation outperforms the legacy one, with an average speed-
 Similar performances have been observed using `ifx` or `flang-new` as compilers.
 More details about this benchmark can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
 
-# Limitations and perspectives
+## Limitations
 
 **Strict convexity :** `Modern QuadProg` (and its ancestor) is limited to strictly convex QP.
 If the matrix $P$ is only symmetric positive semi-definite, it can be replaced with $P + \varepsilon I$ (with $\varepsilon > 0$) at the expense of solving a slightly perturbed (albeit now strictly convex) problem.
 In most applications, this small regularization hardly changes the result of the optimizer while robustifying the solution process.
 Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @boland1996dual. 
 
-**Lack of interfaces with other languages :** We do not currently provide bindings to other languages.
+**Lack of bindings with other languages :** We do not currently provide binding to other languages.
 Interfacing `Fortran` with `Python` can however be done relatively easily using utilities such as `f2py` [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
-Similar packages exist to interface with other languages (e.g. `R` or `Julia`).
-Note moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language.
+Similar packages exist for other languages (e.g. `R` or `Julia`).
+Moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language.
+
+# Research impact statement
 
 # Acknowledgements
 
+No AI tools were used for software creation, documentation, nor paper authoring.
 We acknowledge the financial support of the French National Agency for Research (ANR) through the ANR-33-CE46-0008-CONMAN grant agreement.
 
 # References
