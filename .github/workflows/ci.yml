@@ -1,60 +1,45 @@
 name: ci
-on: [push]
 
-permissions:
-  contents: write
+on: [push, pull_request]
 
 jobs:
   test:
-
-    # Run FPM tests (debug + release) on all OS/compiler combination.
     name: ${{ matrix.os }}_${{ matrix.compiler }}_fpm
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            compiler: gfortran
-            compiler-version: 13.3.0
-            fpm-options: "--profile debug --flag '-coverage'"
-            extra-packages: "lcov"
-           
+          # GFotran compiler.
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 10, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 11, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 12, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 13, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 14, extra-packages: "openblas"}
+          - {os: ubuntu-latest, compiler: gfortran, compiler-version: 15, extra-packages: "openblas"}
+          - {os: windows-latest, compiler: gfortran, compiler-version: 15, extra-packages: "openblas"}
+          - {os: macos-latest, compiler: gfortran, compiler-version: 15, extra-packages: "openblas"}
+
+          # Intel IFX.
+          - {os: ubuntu-latest, compiler: ifx, extra-packages: "mkl mkl-devel mkl-static mkl-include"}
+          - {os: windows-latest, compiler: ifx, extra-packages: "mkl mkl-devel mkl-static mkl-include", fpm-version: "0.12.0"}
+
+          # Other compilers.
+          - {os: ubuntu-latest,  compiler: flang-new, extra-packages: "openblas"}
+          - {os: windows-latest,  compiler: flang-new, extra-packages: "openblas"}
+          # - {os: ubuntu-latest,  compiler: nvfortran, extra-packages: "openblas"}  # Error with assert_m package.
     steps:
       - name: Setup Fortran
         uses: gha3mi/setup-fortran-conda@latest
         with:
           compiler: ${{ matrix.compiler }}
           compiler-version: ${{ matrix.compiler-version }}
-          platform: ${{ matrix.os }}
           extra-packages: ${{ matrix.extra-packages }}
+          fpm-version: ${{ matrix.fpm-version }}
 
-      - name: fpm test (debug)
-        run: |
-          fpm build --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose --show-model
-          fpm test --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --verbose
+      - name: Unit tests (release)
+        run: fpm test --compiler ${{ matrix.compiler }} --verbose --profile release
 
-      - name: Run example
-        run: |
-          fpm run --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --example mpc
-          fpm run --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --example compact_mpc
-          fpm run --compiler ${{ matrix.compiler }} ${{ matrix.fpm-options }} --example markowitz
-
-      - name: Create coverage report
-        if: contains( matrix.os, 'ubuntu') && contains( matrix.compiler, 'gfortran')
-        run: |
-          mkdir -p ${{ env.COV_DIR }}
-          mv ./build/gfortran_*/*/* ${{ env.COV_DIR }}
-          lcov --capture --initial --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.base
-          lcov --capture           --base-directory . --directory ${{ env.COV_DIR }} --output-file ${{ env.COV_DIR }}/coverage.capture
-          lcov --add-tracefile ${{ env.COV_DIR }}/coverage.base --add-tracefile ${{ env.COV_DIR }}/coverage.capture --output-file ${{ env.COV_DIR }}/coverage.info
-        env:
-          COV_DIR: build/coverage
-
-      - name: Upload coverage report
-        if: contains( matrix.os, 'ubuntu') && contains( matrix.compiler, 'gfortran')
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: build/coverage/coverage.info
-          verbose: true
+      - name: Examples (release)
+        if: "!contains( matrix.os, 'windows')"
+        run: fpm run --example --compiler ${{ matrix.compiler }} --profile release
