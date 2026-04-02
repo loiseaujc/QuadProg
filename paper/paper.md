@@ -158,7 +158,7 @@ Similar results have been observed using `ifx` or `flang-new` as compilers.
 ## Benchmarking against other QP solvers
 
 We now benchmark the modernized solver against a large collection of QP solvers (see the dedicated [repository](https://github.com/loiseaujc/quadprog_benchmark) for more details).
-The settings used for each solver follows the high-accuracy settings given by @qp_benchmark.
+The settings used for each solver follows the high-accuracy settings given by @qpbenchmark.
 For fair comparison across all solvers considered, all non-strictly convex QP in this test suite are regularized by replacing $P$ with $P + \varepsilon I$ where $\varepsilon = 10^{-8}$.
 
 # Conclusion
