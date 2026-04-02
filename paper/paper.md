@@ -1,5 +1,5 @@
 ---
-title: 'Modern QuadProg: a modern, open-source Fortran implementation of the Goldfarb-Idnani algorithm for convex quadratic programming'
+title: '[Modern QuadProg]{.sc}: a modern, open-source Fortran implementation of the Goldfarb-Idnani algorithm for convex quadratic programming'
 tags:
   - Fortran
   - Quadratic Programming
@@ -46,6 +46,14 @@ This contribution is part of a wider community-driven effort aiming at modernizi
 
 # State of the field
 
+Open-source state-of-the-art solvers for generic convex programs often are primal-dual interior point methods based on the standard conic form of said programs [@boyd:book:2004].
+These include [`SCS`](https://github.com/cvxgrp/scs) [@ocpb:16,@scs] and [`ECOS`](https://github.com/embotech/ecos) [@bib:Domahidi2013ecos], both written in C, or [`Clarabel`](https://github.com/oxfordcontrol/Clarabel.jl) [@Clarabel_2024] in Julia.
+They are accessible via domain specific languages provided by packages such `cvx` [@cvx,@gb08] in MATLAB, `cvxpy` [@diamond2016cvxpy,@agrawal2018rewriting] in Python, or `Convex.jl` [@convexjl] in Julia.
+Solvers specialized for convex quadratic programs include [`HiGHS`](https://github.com/ERGO-Code/HiGHS) [@huangfu2018parallelizing] (active set method in C++), [`OSQP`](https://osqp.org/) [@osqp] (Douglas-Ratchford splitting in C/C++), or [`ProxSuite`](https://github.com/Simple-Robotics/proxsuite) [@bambade2022prox] (augmented Lagrangian method in C++) to name just a few.
+A thorough comparison of their performances has been performed by @qpbenchmark.
+It needs to be emphasized however that, despite the long-standing history of Fortran in scientific computing, none of these solvers are written in it.
+This is a gap we wish to (partially) fill with this contribution to facilitate the use of convex programming techniques for Fortran programmers.
+
 # Software design
 
 ## A modernized implementation
@@ -58,7 +66,7 @@ In our modernization effort, the most important updates to the original code inc
 - Calls to appropriate `blas` and `lapack` functions now replace hand-crafted or `linpack` implementations for improved performances.
 - Build system based on the Fortran Package Manager `fpm`.
 
-We also provide modern object-oriented interfaces (see `qp_problem`) as well as utility functions to solve non-negative least-squares (`nnls`), bounded-variables least-squares (`bvls`) and $\ell_1$ regularized least-squares (`lasso`).
+We also provide modern object-oriented interfaces (see `qp_problem` and `solve`) as well as utility functions for non-negative least-squares (`nnls`), bounded-variables least-squares (`bvls`) and $\ell_1$ regularized least-squares (`lasso`).
 
 **High-level interface -** Given the datum $P$, $q$, $A$, $b$, $C$ and $d$ defining the quadratic problem, a `qp_problem` instance can be created as follows
 
@@ -93,7 +101,7 @@ program example
     use quadprog, only: OptimizeResult, qp_problem, solve
     implicit none
     integer, parameter :: n = 3                 ! Number of variables.
-    real(dp) :: P(n, n), q(n), C(n, n), d(n)    ! Quadratic cost and inequality constraints.
+    real(dp) :: P(n, n), q(n), C(n, n), d(n)    ! Quadratic cost and constraints.
     type(qp_problem) :: prob
     type(OptimizeResult) :: solution
     !> Quadratic cost function.
@@ -114,7 +122,7 @@ end program
 ```
 
 More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example).
-These include a linear MPC controller with bounded actuation, and a Markowitz portfolio optimization problem.
+These include a linear MPC controller with bounded actuation, and a Markowitz portfolio optimization problem with long-only positions.
 
 ## Performance considerations
 
@@ -127,9 +135,9 @@ These include a linear MPC controller with bounded actuation, and a Markowitz po
 
 The table above reports the wall-clock time needed by the legacy and modernized implementations to solve three representative problems from the Maros-Meszaros test suite [@maros-meszaros].
 This test suite contains 138 convex quadratic problems.
-Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to problems having fewer than 4000 optimization variables and 10 000 constraints.
+Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to strictly convex problems having fewer than 4000 optimization variables and 10 000 constraints.
 All computations were performed on a computer equipped with an 11th Gen Intel Core i7-11850H @ 2.50 GHz.
-Both the legacy and modernized solvers have been compiled with `gfortran 14.3.0` with the standard options `-march=native -mtune=native -03`.
+Both the legacy and modernized solvers have been compiled with `gfortran 14.3.0` and the standard options `-march=native -mtune=native -03`.
 The `blas`/`lapack` backend used is Intel's Math Kernel Library `mkl`.
 Both solvers providing the option to use a pre-factorized matrix $P$, we restrict the timings to the actual solve only.
 The modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3 for problems having roughly 50 optimization variables or more, and has similar performances for smaller problems (in the tenths of microseconds range).
