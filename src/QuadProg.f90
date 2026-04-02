@@ -13,7 +13,7 @@ module QuadProg
 
    public :: dp
    public :: solve
-   public :: nnls, bvls
+   public :: nnls, bvls, lasso
 
    !---------------------------------
    !-----     DERIVED-TYPES     -----
@@ -277,12 +277,13 @@ module QuadProg
    end interface
 
    interface
-      module function lasso(A, b, lambda, rho, tol, maxiter) result(x)
+      module function lasso(A, b, lambda, rho, alpha, tol, maxiter) result(x)
          implicit none(type, external)
          real(dp), intent(inout) :: A(:, :)
          real(dp), intent(in)    :: b(:)
          real(dp), intent(in)    :: lambda
          real(dp), optional, intent(in) :: rho
+         real(dp), optional, intent(in) :: alpha
          real(dp), optional, intent(in) :: tol
          integer, optional, intent(in)  :: maxiter
          real(dp), allocatable          :: x(:)
