@@ -23,13 +23,13 @@ bibliography: paper.bib
 
 $$
 \begin{aligned}
-  \mathrm{minimize} \quad & \dfrac12 \mathbf{x}^\top \mathbf{Px} - \mathbf{x}^\top \mathbf{q} \\
-  \mathrm{subject~to} \quad & \mathbf{Ax} = \mathbf{b} \\
-                             & \mathbf{Cx} \geq \mathbf{d},
+  \mathrm{minimize} \quad & \dfrac12 x^\top Px - x^\top q \\
+  \mathrm{subject~to} \quad & Ax = b \\
+                            & Cx \geq d,
 \end{aligned}
 $$
 
-where $\mathbf{P} \in \mathbb{R}^{n \times n}$ is a symmetric positive-definite matrix.
+where $P \in \mathbb{R}^{n \times n}$ is a symmetric positive-definite matrix.
 Based on the method by @goldfarb-idnani, the linear constraints are handled using an *active set method*.
 The solver is most efficient for small to moderate sized QP described using dense matrices.
 A specialized implementation is also provided when the constraints are described by a set of sparse equations.
@@ -61,7 +61,7 @@ We also provide modern object-oriented interfaces (see `qp_problem`) as well as 
 ## A modern object-oriented interface
 
 A notable introduction in `Modern QuadProg` are object-oriented interfaces.
-Given the datum $\mathbf{P}$, $\mathbf{q}$, $\mathbf{A}$, $\mathbf{b}$, $\mathbf{C}$ and $\mathbf{d}$ defining the quadratic problem, a `qp_problem` instance can be created as follows
+Given the datum $P$, $q$, $A$, $b$, $C$ and $d$ defining the quadratic problem, a `qp_problem` instance can be created as follows
 
 ```fortran
 problem = qp_problem(P, q, A=A, b=b, C=C, d=d)
@@ -109,9 +109,9 @@ program example
     P = eye(n) ; q = [0.0_dp, 5.0_dp, 0.0_dp]
     
     !> Setup the inequality constraints.
-    C(:, 1) = [-4.0_dp, 2.0_dp, 0.0_dp]  ; d(1) = -8.0_dp
-    C(:, 2) = [-3.0_dp, 1.0_dp, -2.0_dp] ; d(2) = -2.0_dp
-    C(:, 3) = [0.0_dp, 0.0_dp, 1.0_dp]   ; d(3) = 0.0_dp
+    C(1, :) = [-4.0_dp, 2.0_dp, 0.0_dp]  ; d(1) = -8.0_dp
+    C(2, :) = [-3.0_dp, 1.0_dp, -2.0_dp] ; d(2) = -2.0_dp
+    C(3, :) = [0.0_dp, 0.0_dp, 1.0_dp]   ; d(3) = 0.0_dp
 
     !> Solve the inequality constrained QP.
     prob = qp_problem(P, q, C=C, d=d)
@@ -133,7 +133,7 @@ These include the construction of a linear MPC controller with bounded actuation
 Beyond the source code translation from FORTRAN 77 to modern Fortran, computational performances have been improved by making explicit calls to the appropriate `blas` functions wherever appropriate.
 Similarly, calls to deprecated `linpack` functions have been replaced by their modern `lapack` equivalent.
 
-| Problem ID  | Number of variables | Number of constraints | Legacy | Modern | Speed-up|
+| Problem ID  | Number of variables | Number of constraints | Legacy | Modern | Speed-up |
 |:-----------:|:-------------------:|:---------------------:|:------:|:-------:|:--------:|
 |       HS118 | 15                  | 64                    | 26µs   | 41µs | 0.6x |
 |   LASER     | 1002                | 4004                  | 9.27s   | 2.96s | 3.1x |
@@ -145,7 +145,7 @@ Following the methodology in @qpbenchmark, we extracted a subset of 25 of them c
 All computations have been run on a computer equipped with an 11th Gen Intel Core i7-11850H @ 2.50 GHz.
 Both the legacy and modernized solvers have been compiled with `gfortran 14.3.0` and the same compilation options.
 The `blas`/`lapack` backend used is Intel's Math Kernel Library `mkl`.
-Both solvers providing the option to use a pre-factorized matrix $\mathbf{P}$, we restrict the timings to the actual solve only.
+Both solvers providing the option to use a pre-factorized matrix $P$, we restrict the timings to the actual solve only.
 The modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3 for problems having roughly 50 optimization variables or more and similar performances for smaller problems (in the tenths of microseconds range).
 Similar performances have been observed using `ifx` or `flang-new` as compilers.
 More details about this benchmark can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
@@ -153,7 +153,7 @@ More details about this benchmark can be found in the [quadprog_benchmark](https
 # Limitations and perspectives
 
 **Strict convexity :** `Modern QuadProg` (and its ancestor) is limited to strictly convex QP.
-When the problem is not strictly convex, the symmetric positive semi-definite matrix $\mathbf{P}$ can be replaced with $\mathbf{P} + \varepsilon \mathbf{I}$ (with $\varepsilon > 0$) at the expense of solving a slightly perturbed (albeit now strictly convex) problem.
+When the problem is not strictly convex, the symmetric positive semi-definite matrix $P$ can be replaced with $P + \varepsilon I$ (with $\varepsilon > 0$) at the expense of solving a slightly perturbed (albeit now strictly convex) problem.
 In most applications, this small regularization might hardly change the result of the optimizer while robustifying the solution process.
 Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @boland1996dual. 
 
