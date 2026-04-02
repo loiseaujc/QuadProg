@@ -47,8 +47,8 @@ This contribution is part of a wider community-driven effort aiming at modernizi
 # State of the field
 
 Open-source state-of-the-art solvers for generic convex programs often are primal-dual interior point methods based on the standard conic form of said programs [@boyd:book:2004].
-These include [`SCS`](https://github.com/cvxgrp/scs) [@ocpb:16,@scs] and [`ECOS`](https://github.com/embotech/ecos) [@bib:Domahidi2013ecos], both written in C, or [`Clarabel`](https://github.com/oxfordcontrol/Clarabel.jl) [@Clarabel_2024] in Julia.
-They are accessible via domain specific languages provided by packages such `cvx` [@cvx,@gb08] in MATLAB, `cvxpy` [@diamond2016cvxpy,@agrawal2018rewriting] in Python, or `Convex.jl` [@convexjl] in Julia.
+These include [`SCS`](https://github.com/cvxgrp/scs) [@ocpb:16; @scs] and [`ECOS`](https://github.com/embotech/ecos) [@bib:Domahidi2013ecos], both written in C, or [`Clarabel`](https://github.com/oxfordcontrol/Clarabel.jl) [@Clarabel_2024] in Julia.
+They are accessible via domain specific languages provided by packages such `cvx` [@cvx; @gb08] in MATLAB, `cvxpy` [@diamond2016cvxpy; @agrawal2018rewriting] in Python, or `Convex.jl` [@convexjl] in Julia.
 Solvers specialized for convex quadratic programs include [`HiGHS`](https://github.com/ERGO-Code/HiGHS) [@huangfu2018parallelizing] (active set method in C++), [`OSQP`](https://osqp.org/) [@osqp] (Douglas-Ratchford splitting in C/C++), or [`ProxSuite`](https://github.com/Simple-Robotics/proxsuite) [@bambade2022prox] (augmented Lagrangian method in C++) to name just a few.
 A thorough comparison of their performances has been performed by @qpbenchmark.
 It needs to be emphasized however that, despite the long-standing history of Fortran in scientific computing, none of these solvers are written in it.
