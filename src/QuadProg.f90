@@ -277,6 +277,37 @@ module QuadProg
    end interface
 
    interface
+      !!    ### Description
+      !!
+      !!    Solve the LASSO problem
+      !!
+      !!    \[
+      !!        \mathrm{minimize} \quad \dfrac12 \| Ax - b \|_2^2 + \lambda \| x \|_1
+      !!    \]
+      !!
+      !!    using ADMM.
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        x = lasso(A, b, lambda [, rho] [, alpha] [, tol] [, maxiter]
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `A`       :   Matrix of size `m x n`. It is an `intent(in)` argument.
+      !!
+      !!    - `b`       :   Rank-1 array of size `m`. It is an `intent(in)` argument.
+      !!
+      !!    - `lambda`  :   `real` Regularization parameter (strictly positive).
+      !!
+      !!    - `rho` (optional)      :   `real` ADMM weight for augmented Lagrangian.
+      !!
+      !!    - `alpha` (optional)    :   `real` over-relaxation weight in ADMM.
+      !!
+      !!    - `tol` (optional)      :   `real` tolerance for convergence.
+      !!
+      !!    - `maxiter` (optional)  :   `integer` maximum number of ADMM iterations.
       module function lasso(A, b, lambda, rho, alpha, tol, maxiter) result(x)
          implicit none(type, external)
          real(dp), intent(inout) :: A(:, :)
