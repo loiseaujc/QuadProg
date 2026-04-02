@@ -1,5 +1,5 @@
 ---
-title: '[Modern QuadProg]{.sc}: a modern, open-source Fortran implementation of the Goldfarb-Idnani algorithm for convex quadratic programming'
+title: 'Modern Quadprog: a modern, open-source Fortran implementation of the Goldfarb-Idnani algorithm for convex quadratic programming'
 tags:
   - Fortran
   - Quadratic Programming
@@ -19,7 +19,7 @@ bibliography: paper.bib
 
 # Summary
 
-`Modern QuadProg` is a modernized implementation of the original FORTRAN 77 `quadprog` solver written by Berwin A. Turlach to solve strictly convex quadratic programs (QP) of the form
+`Modern Quadprog` is a modernized implementation of the original FORTRAN 77 `quadprog` solver written by Berwin A. Turlach to solve strictly convex quadratic programs (QP) of the form
 
 $$
 \begin{aligned}
@@ -30,8 +30,7 @@ $$
 $$
 
 where $P \in \mathbb{R}^{n \times n}$ is a symmetric positive-definite matrix.
-It is based on the *active set method* by @goldfarb-idnani.
-The solver excels on small-to-moderate dense QPs demanding high-accuracy solutions.
+It is based on the *active set method* by @goldfarb-idnani, excelling on small-to-moderate dense QPs demanding high-accuracy solutions.
 A specialized implementation is also provided when the constraints are described by a set of sparse equations.
 This software is released under the GNU GPL-v3 license.
 
@@ -84,7 +83,7 @@ solution = solve(problem)
 
 where `solution` is a derived-type storing the solution of the constrained QP, the vector of Lagrange multipliers and the value of the objective function evaluated at the constrained solution.
 
-**Example -** The following program illustrates how to use `Modern QuadProg` to solve the constrained QP
+**Example -** The following program illustrates how to use `Modern Quadprog` to solve the constrained QP
 
 $$
 \begin{aligned}
@@ -125,7 +124,17 @@ end program
 More examples can be found in the dedicated folder [here](https://github.com/loiseaujc/QuadProg/tree/main/example).
 These include a linear MPC controller with bounded actuation, and a Markowitz portfolio optimization problem with long-only positions.
 
-## Performance considerations
+## Limitations
+
+**Strict convexity:** `Modern Quadprog` (and its ancestor) is limited to strictly convex QP.
+If $P$ is only positive semi-definite, replacing it with $P + \varepsilon I$ (with $\varepsilon > 0$) yields a slightly perturbed, albeit strictly convex problem with negligible effect on the solution.
+Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @boland1996dual. 
+
+**Lack of bindings with other languages:** We do not currently provide binding to other languages.
+
+# Research impact statement
+
+## Benchmarking the computational performances
 
 
 | Problem ID  | Number of variables | Number of constraints | Legacy | Modern | Speed-up |
@@ -145,19 +154,11 @@ The modernized implementation outperforms the legacy one, with an average speed-
 Similar results have been observed using `ifx` or `flang-new` as compilers.
 More details about this benchmark can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
 
-## Limitations
+# Conclusion
 
-**Strict convexity :** `Modern QuadProg` (and its ancestor) is limited to strictly convex QP.
-If the matrix $P$ is only symmetric positive semi-definite, it can be replaced with $P + \varepsilon I$ (with $\varepsilon > 0$) at the expense of solving a slightly perturbed (albeit now strictly convex) problem.
-In most applications, this small regularization hardly changes the result of the optimizer while robustifying the solution process.
-Another alternative would be to implement the extension of the Goldfarb & Idnani algorithm for non-strictly convex QP by @boland1996dual. 
-
-**Lack of bindings with other languages :** We do not currently provide binding to other languages.
-Interfacing `Fortran` with `Python` can however be done relatively easily using utilities such as `f2py` [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
-Similar packages exist for other languages (e.g. `R` or `Julia`).
-Moreover note that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language, something we plan to leverage for developing these bindings.
-
-# Research impact statement
+`Modern Quadprog` delivers a robust, high‑performance Fortran implementation of the Goldfarb–Idnani algorithm, effective for small-to-moderate dense convex quadratic programs.
+While the current release supports only strictly convex problems, a simple regularisation of the objective matrix suffices to treat non‑strictly convex cases.
+Leveraging the enhanced Fortran-to-C interoperability in recent standards, the next phase of development will add bindings for Python, R, and Julia to broaden adoption and maximize research impact.
 
 # Acknowledgements
 
