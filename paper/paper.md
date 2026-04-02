@@ -31,8 +31,9 @@ $$
 
 where $P \in \mathbb{R}^{n \times n}$ is a symmetric positive-definite matrix.
 It is based on the *active set method* by @goldfarb-idnani.
-The solver is most efficient for small to moderate-sized QP described using dense matrices for which high-accuracy solutions are required.
+The solver excels on small-to-moderate dense QPs demanding high-accuracy solutions.
 A specialized implementation is also provided when the constraints are described by a set of sparse equations.
+This software is released under the GNU GPL-v3 license.
 
 # Statement of need
 
@@ -138,7 +139,7 @@ This test suite contains 138 convex quadratic problems.
 Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to strictly convex problems having fewer than 4000 optimization variables and 10 000 constraints.
 All computations were performed on a computer equipped with an 11th Gen Intel Core i7-11850H @ 2.50 GHz.
 Both the legacy and modernized solvers have been compiled with `gfortran 14.3.0` and the standard options `-march=native -mtune=native -03`.
-The `blas`/`lapack` backend used is Intel's Math Kernel Library `mkl`.
+The `blas`/`lapack` backend used is Intel's Math Kernel Library `mkl`, although it can easily be switched to another backend thanks to the Fortran package manager `fpm`.
 Both solvers providing the option to use a pre-factorized matrix $P$, we restrict the timings to the actual solve only.
 The modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3 for problems having roughly 50 optimization variables or more, and has similar performances for smaller problems (in the tenths of microseconds range).
 Similar results have been observed using `ifx` or `flang-new` as compilers.
@@ -154,7 +155,7 @@ Another alternative would be to implement the extension of the Goldfarb & Idnani
 **Lack of bindings with other languages :** We do not currently provide binding to other languages.
 Interfacing `Fortran` with `Python` can however be done relatively easily using utilities such as `f2py` [@f2py] or [`f90wrap`](https://github.com/jameskermode/f90wrap) [@f90wrap].
 Similar packages exist for other languages (e.g. `R` or `Julia`).
-Moreover that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language.
+Moreover note that the latest `Fortran` standards have introduced many features to facilitate interoperability with the `C` language, something we plan to leverage for developing these bindings.
 
 # Research impact statement
 
@@ -162,5 +163,6 @@ Moreover that the latest `Fortran` standards have introduced many features to fa
 
 No AI tools were used for software creation, documentation, nor paper authoring.
 We acknowledge the financial support of the French National Agency for Research (ANR) through the ANR-33-CE46-0008-CONMAN grant agreement.
+We are grateful to the fortran-lang community for the development of the Fortran standard library `stdlib` [@federico_perini_2026_18346789] and the Fortran Package manager `fpm`, two critical components in this modernization effort.
 
 # References
