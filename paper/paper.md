@@ -134,29 +134,36 @@ Another alternative would be to implement the extension of the Goldfarb & Idnani
 
 # Research impact statement
 
-## Benchmarking the computational performances
+We follow the methodology in @qpbenchmark to evaluate the performances of the modernized implementation.
+We restrict ourselves to problems from the Maros-Meszaros test suite [@maros-meszaros] with fewer than 4000 variables and 10 000 constraints.
+All computations were performed on a computer equipped with an 11th Gen Intel Core i7-11850H @ 2.50 GHz.
+More details about this benchmark can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
+
+## Legacy vs modernized solver
 
 
 | Problem ID  | Number of variables | Number of constraints | Legacy | Modern | Speed-up |
 |:-----------:|:-------------------:|:---------------------:|:------:|:-------:|:--------:|
-|       HS118 | 15                  | 64                    | 26µs   | 41µs | 0.63x |
+|   HS118     | 15                  | 64                    | 26µs   | 41µs | 0.63x |
 |   LASER     | 1002                | 4004                  | 9.27s   | 2.96s | 3.1x |
 |   AUG3DCQP  | 3873                | 8746                  | 85.1s    | 31.3s | 2.7x |
 
-The table above reports the wall-clock time needed by the legacy and modernized implementations to solve three representative problems from the Maros-Meszaros test suite [@maros-meszaros].
-This test suite contains 138 convex quadratic problems.
-Following the methodology in @qpbenchmark, we extracted a subset of 25 of them corresponding to strictly convex problems having fewer than 4000 optimization variables and 10 000 constraints.
-All computations were performed on a computer equipped with an 11th Gen Intel Core i7-11850H @ 2.50 GHz.
+The table above reports the wall-clock time needed by the legacy and modernized implementations to solve three representative problems from the Maros-Meszaros test suite [@maros-meszaros] restricted to strictly convex quadratic programs.
 Both the legacy and modernized solvers have been compiled with `gfortran 14.3.0` and the standard options `-march=native -mtune=native -03`.
 The `blas`/`lapack` backend used is Intel's Math Kernel Library `mkl`, although it can easily be switched to another backend thanks to the Fortran package manager `fpm`.
 Both solvers providing the option to use a pre-factorized matrix $P$, we restrict the timings to the actual solve only.
 The modernized implementation outperforms the legacy one, with an average speed-up of 2 to 3 for problems having roughly 50 optimization variables or more, and has similar performances for smaller problems (in the tenths of microseconds range).
 Similar results have been observed using `ifx` or `flang-new` as compilers.
-More details about this benchmark can be found in the [quadprog_benchmark](https://github.com/loiseaujc/quadprog_benchmark) Github repository.
+
+## Benchmarking against other QP solvers
+
+We now benchmark the modernized solver against a large collection of QP solvers (see the dedicated [repository](https://github.com/loiseaujc/quadprog_benchmark) for more details).
+The settings used for each solver follows the high-accuracy settings given by @qp_benchmark.
+For fair comparison across all solvers considered, all non-strictly convex QP in this test suite are regularized by replacing $P$ with $P + \varepsilon I$ where $\varepsilon = 10^{-8}$.
 
 # Conclusion
 
-`Modern Quadprog` delivers a robust, high‑performance Fortran implementation of the Goldfarb–Idnani algorithm, effective for small-to-moderate dense convex quadratic programs.
+`Modern Quadprog` delivers a robust, high‑performance Fortran implementation of the Goldfarb–Idnani algorithm, effective for small-to-moderate dense convex quadratic programs.
 While the current release supports only strictly convex problems, a simple regularisation of the objective matrix suffices to treat non‑strictly convex cases.
 Leveraging the enhanced Fortran-to-C interoperability in recent standards, the next phase of development will add bindings for Python, R, and Julia to broaden adoption and maximize research impact.
 
