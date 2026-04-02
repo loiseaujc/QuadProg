@@ -1,6 +1,6 @@
 submodule(quadprog) lstsq_variants
    use quadprog_constants, only: dp
-   use stdlib_linalg, only: eye
+   use stdlib_linalg, only: eye, solve_lower_chol, norm
    use stdlib_linalg_lapack, only: gemm
    implicit none(type, external)
 contains
@@ -161,20 +161,22 @@ contains
 
    module procedure lasso
    !> Optional arguments.
-   real(dp) :: tol_, rho_
+   real(dp) :: tol_, rho_, alpha_
    integer :: maxiter_
    !> Miscellaneous.
-   integer  :: m, n, info
-   real(dp), allocatable :: Atb(:), z(:), v(:)
+   integer  :: i, m, n, iter, info
+   real(dp) :: r_norm, s_norm, primal_eps, dual_eps, xhat
+   real(dp), allocatable :: Atb(:), q(:), z(:), v(:), z_old(:)
    real(dp), allocatable :: L(:, :)
 
    !> Problem's dimensions.
    m = size(A, 1); n = size(A, 2)
 
    !> Optional arguments.
-   maxiter_ = optval(maxiter, 100)
+   maxiter_ = optval(maxiter, 1000)
    tol_ = optval(tol, sqrt(epsilon(1.0_dp)))
    rho_ = optval(rho, 2.0_dp)
+   alpha_ = optval(alpha, 1.0_dp)
 
    !> Sanity checks.
    call assert(assertion=m >= n, &
@@ -185,15 +187,58 @@ contains
                description="lambda needs to be strictly positive.")
    call assert(assertion=rho_ > 0, &
                description="rho needs to be strictly positive.")
+   call assert(assertion=(0 < alpha_) .and. (alpha_ <= 1.0_dp), &
+               description="alpha needs to be strictly positive and less or equal to 1.")
    call assert(assertion=maxiter_ > 0, &
                description="Maximum number of iterations needs to be positive.")
    call assert(assertion=tol_ > 0, &
                description="Tolerance needs to be strictly positive.")
 
    !> Allocate arrays.
-   allocate (x(n), z(n), v(n), source=0.0_dp)
+   allocate (x(n), z(n), v(n), q(n), z_old(n), source=0.0_dp)
    !> Cholesky factorization of (rho*I + A^T @ A).
    L = rho_*eye(n) + matmul(transpose(A), A)
-   call cholesky(L)
+   call cholesky(L, lower=.true.)
+   !> Pre-compute constant arrays.
+   Atb = matmul(transpose(A), b)
+
+   !> Optimization loop.
+   admm: do iter = 1, maxiter_
+      !> Partial minimization over x.
+      do concurrent(i=1:n)
+         q(i) = Atb(i) + rho_*(z(i) - v(i))
+      end do
+      call solve_lower_chol(L, q, x)
+
+      do concurrent(i=1:n)
+         !> Partial minimization over z.
+         z_old(i) = z(i)
+         xhat = alpha_*x(i) + (1.0_dp - alpha_)*z_old(i)
+         z(i) = shrinkage(xhat + v(i), lambda/rho_)
+
+         !> Dual ascent.
+         v(i) = v(i) + (xhat - z(i))
+      end do
+
+      !> Residuals.
+      r_norm = norm(x - z, 2)
+      s_norm = rho_*norm(z - z_old, 2)
+
+      primal_eps = sqrt(real(n, kind=dp))*epsilon(1.0_dp) + tol_*max(norm(x, 2), norm(z, 2))
+      dual_eps = sqrt(real(n, kind=dp))*epsilon(1.0_dp) + tol_*rho_*norm(v, 2)
+
+      !> Convergence check.
+      if ((r_norm <= primal_eps) .and. (s_norm <= dual_eps)) then
+         x = z
+         exit admm
+      end if
+   end do admm
    end procedure lasso
+
+   real(dp) elemental function shrinkage(x, a) result(y)
+      implicit none(type, external)
+      real(dp), intent(in) :: x
+      real(dp), intent(in) :: a
+      y = max(0.0_dp, x - a) - max(0.0_dp, -x - a)
+   end function shrinkage
 end submodule lstsq_variants

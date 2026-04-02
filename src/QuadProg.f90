@@ -13,7 +13,7 @@ module QuadProg
 
    public :: dp
    public :: solve
-   public :: nnls, bvls
+   public :: nnls, bvls, lasso
 
    !---------------------------------
    !-----     DERIVED-TYPES     -----
@@ -277,12 +277,44 @@ module QuadProg
    end interface
 
    interface
-      module function lasso(A, b, lambda, rho, tol, maxiter) result(x)
+      !!    ### Description
+      !!
+      !!    Solve the LASSO problem
+      !!
+      !!    \[
+      !!        \mathrm{minimize} \quad \dfrac12 \| Ax - b \|_2^2 + \lambda \| x \|_1
+      !!    \]
+      !!
+      !!    using ADMM.
+      !!
+      !!    ### Syntax
+      !!
+      !!    ```fortran
+      !!        x = lasso(A, b, lambda [, rho] [, alpha] [, tol] [, maxiter]
+      !!    ```
+      !!
+      !!    ### Arguments
+      !!
+      !!    - `A`       :   Matrix of size `m x n`. It is an `intent(in)` argument.
+      !!
+      !!    - `b`       :   Rank-1 array of size `m`. It is an `intent(in)` argument.
+      !!
+      !!    - `lambda`  :   `real` Regularization parameter (strictly positive).
+      !!
+      !!    - `rho` (optional)      :   `real` ADMM weight for augmented Lagrangian.
+      !!
+      !!    - `alpha` (optional)    :   `real` over-relaxation weight in ADMM.
+      !!
+      !!    - `tol` (optional)      :   `real` tolerance for convergence.
+      !!
+      !!    - `maxiter` (optional)  :   `integer` maximum number of ADMM iterations.
+      module function lasso(A, b, lambda, rho, alpha, tol, maxiter) result(x)
          implicit none(type, external)
          real(dp), intent(inout) :: A(:, :)
          real(dp), intent(in)    :: b(:)
          real(dp), intent(in)    :: lambda
          real(dp), optional, intent(in) :: rho
+         real(dp), optional, intent(in) :: alpha
          real(dp), optional, intent(in) :: tol
          integer, optional, intent(in)  :: maxiter
          real(dp), allocatable          :: x(:)
